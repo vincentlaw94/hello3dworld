@@ -1,19 +1,26 @@
 "use client";
-import styles from "./page.module.css";
+import styled from "styled-components";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
-import { Box } from "./components";
+import * as THREE from "three";
+import React from "react";
+import { Box, Blob, Text } from "./components";
+
 export default function Home() {
   return (
-    <main className={styles.main}>
+    <Main>
       <Canvas>
-        <ambientLight />
-        <pointLight position={[10, 10, 10]} />
-        <Box position={[-1.2, 0, 0]} />
-        <Box position={[1.2, 0, 0]} />
-        <Box position={[1.2 * 3, 0, 0]} />
-        <OrbitControls />
+        <Blob />
       </Canvas>
-    </main>
+    </Main>
   );
 }
+
+const Main = styled("main")({
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "space-between",
+  alignItems: "center",
+  padding: "6rem",
+  minHeight: "100vh",
+});
