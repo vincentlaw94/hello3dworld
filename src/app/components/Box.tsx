@@ -1,8 +1,17 @@
 import React, { useRef, useState } from "react";
 import { useFrame, ThreeElements } from "@react-three/fiber";
 import * as THREE from "three";
+import { Canvas } from "@react-three/fiber";
 
-export default function Box(props: ThreeElements["mesh"]) {
+export default function Box() {
+  return (
+    <Canvas>
+      <BoxMesh />
+    </Canvas>
+  );
+}
+
+function BoxMesh(props: ThreeElements["mesh"]) {
   const mesh = useRef<THREE.Mesh>(null!);
   const [hovered, setHover] = useState(false);
   const [active, setActive] = useState(false);
