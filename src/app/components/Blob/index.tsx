@@ -1,10 +1,18 @@
 import React, { useMemo, useRef } from "react";
 import { vertexShader, fragmentShader } from "./shaders";
-
+import { Canvas } from "@react-three/fiber";
 import { useFrame } from "@react-three/fiber";
 import { BufferGeometry, Material, MathUtils, Mesh } from "three";
 
 export default function Blob() {
+  return (
+    <Canvas>
+      <BlobMesh />
+    </Canvas>
+  );
+}
+
+function BlobMesh() {
   const mesh = useRef<any>();
   const hover = useRef(false);
   const uniforms = useMemo(() => {
