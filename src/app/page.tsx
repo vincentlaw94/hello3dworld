@@ -4,12 +4,12 @@ import styled from "styled-components";
 import { OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import React from "react";
-import { Box, Blob, Text, Llama } from "./components";
+import { Box, Blob, Text, Llama, Space } from "./components";
 
 export default function Home() {
   return (
     <Main>
-      <Llama />
+      <Space />
     </Main>
   );
 }
