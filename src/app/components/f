@@ -1,0 +1,4420 @@
+import {S as o, W as a, s as E, R as U, P as _, a as l, D as x, O as k, T as r, b, G as C, C as h, A as R, M as u, c as W, d as w, V as g, e as v, f as c, g as d, h as f, i as L, j as O, k as F, l as$, m as I, n as j} from "./vendor.0e4da62c.js";
+const q = function() {
+    const e = document.createElement("link").relList;
+    if (e && e.supports && e.supports("modulepreload"))
+        return;
+    for (const s of document.querySelectorAll('link[rel="modulepreload"]'))
+        t(s);
+    new MutationObserver(s=>{
+        for (const m of s)
+            if (m.type === "childList")
+                for (const D of m.addedNodes)
+                    D.tagName === "LINK" && D.rel === "modulepreload" && t(D)
+    }
+    ).observe(document, {
+        childList: !0,
+        subtree: !0
+    });
+    function i(s) {
+        const m = {};
+        return s.integrity && (m.integrity = s.integrity),
+        s.referrerpolicy && (m.referrerPolicy = s.referrerpolicy),
+        s.crossorigin === "use-credentials" ? m.credentials = "include" : s.crossorigin === "anonymous" ? m.credentials = "omit" : m.credentials = "same-origin",
+        m
+    }
+    function t(s) {
+        if (s.ep)
+            return;
+        s.ep = !0;
+        const m = i(s);
+        fetch(s.href, m)
+    }
+};
+q();
+class N {
+    constructor() {
+        this.rendererParam = {
+            clearColor: 15724527,
+            width: window.innerWidth,
+            height: window.innerHeight
+        },
+        this.scene = null,
+        this.camera = null,
+        this.renderer = null,
+        this.light = null,
+        this.controls = null,
+        this.webglElement = null,
+        this.isInitialized = !1
+    }
+    init() {
+        this._setScene(),
+        this._setRenderer(),
+        this._setCamera(),
+        this._setLight(),
+        this._setControls(),
+        this.isInitialized = !0
+    }
+    _setScene() {
+        this.scene = new o
+    }
+    _setRenderer() {
+        this.renderer = new a({
+            alpha: !1,
+            antialias: !0
+        }),
+        this.renderer.physicallyCorrectLights = !0,
+        this.renderer.outputEncoding = E,
+        this.renderer.toneMapping = U,
+        this.renderer.shadowMap.enabled = !0,
+        this.renderer.shadowMap.type = _,
+        this.renderer.setSize(this.rendererParam.width, this.rendererParam.height),
+        this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio)),
+        this.webglElement = document.querySelector("#container"),
+        this.webglElement.appendChild(this.renderer.domElement)
+    }
+    _setCamera() {
+        this.isInitialized || (this.camera = new l(75,window.innerWidth / window.innerHeight,.1,100),
+        this.camera.position.set(3, 2, 5)),
+        this.camera.aspect = window.innerWidth / window.innerHeight,
+        this.camera.updateProjectionMatrix(),
+        this.renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+    _setLight() {
+        this.light = new x("#ffffff",3),
+        this.light.castShadow = !0,
+        this.light.shadow.camera.far = 15,
+        this.light.shadow.mapSize.set(1024, 1024),
+        this.light.shadow.normalBias = .05,
+        this.light.position.set(4.25, 3, 2.25),
+        this.scene.add(this.light)
+    }
+    _setControls() {
+        this.controls = new k(this.camera,this.webglElement),
+        this.controls.target.set(0, 1, 0),
+        this.controls.enableDamping = !0
+    }
+    render() {
+        this.controls.update(),
+        this.renderer.render(this.scene, this.camera)
+    }
+    resize() {
+        this._setCamera()
+    }
+}
+var Y = `varying vec2 vUv;
+varying float dis;
+uniform float uTime;
+
+void main(){
+    vUv = uv;
+    vec4 modelPosition = modelMatrix * vec4(position,1.0);
+    dis = sin(modelPosition.y - uTime) * .02;
+    modelPosition.z += dis;
+
+    vec4 viewPosition = viewMatrix * modelPosition;
+    vec4 projectedPosition = projectionMatrix * viewPosition;
+
+    gl_Position = projectedPosition;
+}`
+  , V = `varying vec2 vUv;
+uniform vec2 uMeshSize;
+uniform vec2 uTextureSize;
+uniform sampler2D uTexture;
+uniform float uTime;
+varying float dis;
+
+void main(){
+
+    vec2 uvTexture = vUv;
+    vec2 resolutionRatio = vec2(
+       min((uMeshSize.x / uMeshSize.y) / (uTextureSize.x / uTextureSize.y), 1.0),
+       min((uMeshSize.y / uMeshSize.x) / (uTextureSize.y / uTextureSize.x), 1.0)
+    );
+    uvTexture -= .5;
+    uvTexture *= resolutionRatio;
+    uvTexture += .5;
+
+    vec4 cDist = texture2D(uTexture,uvTexture);
+    cDist.r /= sin(dis * 10.0);
+    cDist.b /= sin(dis * 5.0);
+
+
+    gl_FragColor = vec4(cDist.r,cDist.g,cDist.b,cDist.a);
+
+}`;
+class B {
+    constructor(e, i, t) {
+        this.stage = e,
+        this.name = i,
+        this.url = t,
+        this.mesh = null,
+        this.debugObject = {},
+        this.clock = null,
+        this.time = 0,
+        this.uniforms = {
+            uTexture: {
+                value: new r().load("/image1.png")
+            },
+            uTextureSize: {
+                value: {
+                    x: 1080,
+                    y: 1080
+                }
+            },
+            uMeshSize: {
+                value: {
+                    x: window.innerWidth,
+                    y: window.innerHeight
+                }
+            },
+            uTime: {
+                value: 0
+            }
+        },
+        this.helper = null
+    }
+    init() {
+        const e = new b;
+        e.setDecoderPath("/draco/");
+        const i = new C;
+        i.setDRACOLoader(e),
+        i.load(this.url, t=>{
+            this.mesh = t.scene,
+            this.stage.scene.add(t.scene),
+            this.updateAllMaterials(),
+            this._setPosition()
+        }
+        ),
+        this.clock = new h,
+        this.helper = new R(5)
+    }
+    updateAllMaterials() {
+        this.stage.scene.traverse(e=>{
+            e instanceof u && e.material instanceof W && (e.name === "Plane" && (e.material = new w({
+                vertexShader: Y,
+                fragmentShader: V,
+                uniforms: this.uniforms
+            })),
+            e.material.envMapIntensity = this.debugObject.envMapIntensity,
+            e.castShadow = !0,
+            e.receiveShadow = !0)
+        }
+        )
+    }
+    _setPosition() {
+        this.name === "house" && (this.mesh.position.set(0, -3, 0),
+        this.mesh.scale.set(3, 3, 3),
+        this.mesh.rotation.set(0, 0, 0)),
+        this.name === "bird" && (this.mesh.position.set(.5, -1, 1),
+        this.mesh.rotation.set(-.3, .5, 0))
+    }
+    render() {
+        this.mesh && (this.mesh.rotation.y += .01);
+        const e = this.clock.getElapsedTime();
+        this.time = e,
+        this.uniforms.uTime.value = this.time
+    }
+}
+class G {
+    constructor() {
+        this.stage = null,
+        this.models = null,
+        this.modelObjects = []
+    }
+    init() {
+        this.stage = new N,
+        this.stage.init(),
+        this.models = [{
+            name: "house",
+            url: "/models/bird.glb",
+            mesh: null
+        }],
+        this.models.forEach((e,i)=>{
+            this.models[i].mesh = new B(this.stage,e.name,e.url),
+            this.models[i].mesh.init()
+        }
+        ),
+        this.onRaf(),
+        this.resize = this.resize.bind(this),
+        window.addEventListener("resize", this.resize)
+    }
+    render() {
+        this.stage.render(),
+        this.models.forEach((e,i)=>{
+            this.models[i].mesh.render()
+        }
+        )
+    }
+    resize() {
+        this.stage.resize()
+    }
+    onRaf() {
+        this.render(),
+        requestAnimationFrame(this.onRaf.bind(this))
+    }
+}
+class X {
+    constructor() {
+        this.rendererParam = {
+            clearColor: 15724527,
+            width: window.innerWidth,
+            height: window.innerHeight
+        },
+        this.cameraParam = {
+            fov: 60,
+            near: .1,
+            far: 10,
+            lookAt: new g(0,0,0),
+            x: 0,
+            y: 0,
+            z: 1
+        },
+        this.scene = null,
+        this.camera = null,
+        this.renderer = null,
+        this.light = null,
+        this.controls = null,
+        this.webglElement = null,
+        this.isInitialized = !1
+    }
+    init() {
+        this._setScene(),
+        this._setRenderer(),
+        this._setCamera(),
+        this.isInitialized = !0
+    }
+    _setScene() {
+        this.scene = new o
+    }
+    _setRenderer() {
+        this.renderer = new a({
+            alpha: !1,
+            antialias: !0
+        }),
+        this.renderer.setSize(this.rendererParam.width, this.rendererParam.height),
+        this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio)),
+        this.webglElement = document.querySelector("#container"),
+        this.webglElement.appendChild(this.renderer.domElement)
+    }
+    _setCamera() {
+        this.isInitialized || (this.camera = new l(0,0,this.cameraParam.near,this.cameraParam.far),
+        this.camera.position.set(this.cameraParam.x, this.cameraParam.y, this.cameraParam.z),
+        this.camera.lookAt(this.cameraParam.lookAt));
+        const e = window.innerWidth
+          , i = window.innerHeight;
+        this.camera.aspect = e / i,
+        this.camera.fov = v.radToDeg(Math.atan(e / this.camera.aspect / (2 * this.camera.position.z))) * 2,
+        this.camera.updateProjectionMatrix(),
+        this.renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+    render() {
+        this.renderer.render(this.scene, this.camera)
+    }
+    resize() {
+        this._setCamera()
+    }
+}
+var K = `varying vec2 vUv;
+varying float dis;
+uniform float uTime;
+
+void main(){
+    vUv = uv;
+    vec4 modelPosition = modelMatrix * vec4(position,1.0);
+    dis = sin(modelPosition.y - uTime) * .02;
+    modelPosition.z += dis;
+
+    vec4 viewPosition = viewMatrix * modelPosition;
+    vec4 projectedPosition = projectionMatrix * viewPosition;
+
+    gl_Position = projectedPosition;
+}`
+  , J = `varying vec2 vUv;
+varying float dis;
+
+uniform float uTime;
+uniform vec2 uMeshSize;
+uniform vec2 uTextureSize;
+uniform sampler2D uTexture;
+
+void main(){
+    vec2 uvTexture = vUv;
+
+    vec2 resolutionRatio = vec2(
+       min((uMeshSize.x / uMeshSize.y) / (uTextureSize.x / uTextureSize.y), 1.0),
+       min((uMeshSize.y / uMeshSize.x) / (uTextureSize.y / uTextureSize.x), 1.0)
+    );
+    uvTexture -= .5;
+    uvTexture *= resolutionRatio;
+    uvTexture += .5;
+
+    vec4 cDist = texture2D(uTexture,uvTexture);
+    cDist.b /= abs(sin(dis*10.0));
+
+    gl_FragColor = cDist;
+
+}`;
+class Q {
+    constructor(e) {
+        this.stage = e,
+        this.clock = null,
+        this.time = 0,
+        this.geometry = null,
+        this.material = null,
+        this.mesh = null,
+        this.windowWidth = 0,
+        this.windowHeight = 0,
+        this.windowWidthHalf = 0,
+        this.windowHeightHalf = 0,
+        this.meshWidthHalf = 0,
+        this.meshHeightHalf = 0,
+        this.uniforms = {
+            uTexture: {
+                value: new r().load("/image1.png")
+            },
+            uTextureSize: {
+                value: {
+                    x: 1080,
+                    y: 1080
+                }
+            },
+            uMeshSize: {
+                value: {
+                    x: window.innerWidth,
+                    y: window.innerHeight
+                }
+            },
+            uTime: {
+                value: 0
+            }
+        }
+    }
+    init() {
+        this.clock = new h,
+        this.geometry = new c(1,1,32,32),
+        this.material = new w({
+            vertexShader: K,
+            fragmentShader: J,
+            transparent: !0,
+            uniforms: this.uniforms
+        }),
+        this.mesh = new u(this.geometry,this.material),
+        this.stage.scene.add(this.mesh),
+        this._setWindowSize(),
+        this._setMeshScale(),
+        this._setMeshPosition()
+    }
+    _setWindowSize() {
+        this.windowWidth = window.innerWidth,
+        this.windowHeight = window.innerHeight,
+        this.windowWidthHalf = this.windowWidth * .5,
+        this.windowHeightHalf = this.windowHeight * .5
+    }
+    _setMeshScale() {
+        this.mesh.scale.set(this.windowWidth, this.windowHeight),
+        this.uniforms.uMeshSize.value = {
+            x: this.mesh.scale.x,
+            y: this.mesh.scale.y
+        },
+        this.meshWidthHalf = this.mesh.scale.x * .5,
+        this.meshHeightHalf = this.mesh.scale.y * .5
+    }
+    _setMeshPosition() {
+        this.mesh.position.x = -this.windowWidthHalf + this.meshWidthHalf,
+        this.mesh.position.y = this.windowHeightHalf - this.meshHeightHalf
+    }
+    resize() {
+        this._setWindowSize(),
+        this._setMeshScale()
+    }
+    render() {
+        this.mesh && this._setMeshPosition();
+        const e = this.clock.getElapsedTime();
+        this.time = e,
+        this.uniforms.uTime.value = this.time
+    }
+}
+class Z {
+    constructor() {
+        this.stage = null
+    }
+    init() {
+        this.stage = new X,
+        this.stage.init(),
+        this.mesh = new Q(this.stage),
+        this.mesh.init(),
+        this.onRaf(),
+        this.resize = this.resize.bind(this),
+        window.addEventListener("resize", this.resize)
+    }
+    render() {
+        this.stage.render(),
+        this.mesh.render()
+    }
+    resize() {
+        this.stage.resize(),
+        this.mesh.resize()
+    }
+    onRaf() {
+        this.render(),
+        requestAnimationFrame(this.onRaf.bind(this))
+    }
+}
+class ee {
+    constructor() {
+        this.rendererParam = {
+            clearColor: 15724527,
+            width: window.innerWidth,
+            height: window.innerHeight
+        },
+        this.cameraParam = {
+            fov: 60,
+            near: .1,
+            far: 10,
+            lookAt: new g(0,0,0),
+            x: 0,
+            y: 0,
+            z: 1
+        },
+        this.scene = null,
+        this.camera = null,
+        this.renderer = null,
+        this.light = null,
+        this.controls = null,
+        this.webglElement = null,
+        this.isInitialized = !1
+    }
+    init() {
+        this._setScene(),
+        this._setRenderer(),
+        this._setCamera(),
+        this.isInitialized = !0
+    }
+    _setScene() {
+        this.scene = new o
+    }
+    _setRenderer() {
+        this.renderer = new a({
+            alpha: !1,
+            antialias: !0
+        }),
+        this.renderer.setSize(this.rendererParam.width, this.rendererParam.height),
+        this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio)),
+        this.webglElement = document.querySelector("#container"),
+        this.webglElement.appendChild(this.renderer.domElement)
+    }
+    _setCamera() {
+        this.isInitialized || (this.camera = new l(0,0,this.cameraParam.near,this.cameraParam.far),
+        this.camera.position.set(this.cameraParam.x, this.cameraParam.y, this.cameraParam.z),
+        this.camera.lookAt(this.cameraParam.lookAt));
+        const e = window.innerWidth
+          , i = window.innerHeight;
+        this.camera.aspect = e / i,
+        this.camera.fov = v.radToDeg(Math.atan(e / this.camera.aspect / (2 * this.camera.position.z))) * 2,
+        this.camera.updateProjectionMatrix(),
+        this.renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+    render() {
+        this.renderer.render(this.scene, this.camera)
+    }
+    resize() {
+        this._setCamera()
+    }
+}
+var ie = `varying vec2 vUv;
+uniform float uTime;
+
+void main(){
+    vUv = uv;
+    vec4 modelPosition = modelMatrix * vec4(position,1.0);
+
+    vec4 viewPosition = viewMatrix * modelPosition;
+    vec4 projectedPosition = projectionMatrix * viewPosition;
+
+    gl_Position = projectedPosition;
+}`
+  , te = `varying vec2 vUv;
+varying float dis;
+
+uniform float uTime;
+uniform vec2 uMeshSize;
+uniform vec2 uTextureSize;
+uniform sampler2D uTexture;
+
+void main(){
+    vec2 uvTexture = vUv;
+
+    vec2 resolutionRatio = vec2(
+       min((uMeshSize.x / uMeshSize.y) / (uTextureSize.x / uTextureSize.y), 1.0),
+       min((uMeshSize.y / uMeshSize.x) / (uTextureSize.y / uTextureSize.x), 1.0)
+    );
+    uvTexture -= .5;
+    uvTexture *= resolutionRatio;
+    uvTexture += .5;
+    
+
+    vec4 defaultColor = texture2D(uTexture,uvTexture);
+    vec4 redColor = texture2D(uTexture,uvTexture + vec2(.01 * sin(uTime*4.0) , 0.0));
+    vec4 blueColor = texture2D(uTexture,uvTexture + vec2(.015 * sin(uTime*5.0) , 0.0));
+
+    gl_FragColor = vec4(redColor.r,defaultColor.g,blueColor.b,defaultColor.a);
+
+}`;
+class se {
+    constructor(e) {
+        this.stage = e,
+        this.clock = null,
+        this.time = 0,
+        this.geometry = null,
+        this.material = null,
+        this.mesh = null,
+        this.windowWidth = 0,
+        this.windowHeight = 0,
+        this.windowWidthHalf = 0,
+        this.windowHeightHalf = 0,
+        this.meshWidthHalf = 0,
+        this.meshHeightHalf = 0,
+        this.uniforms = {
+            uTexture: {
+                value: new r().load("/image1.png")
+            },
+            uTextureSize: {
+                value: {
+                    x: 1080,
+                    y: 1080
+                }
+            },
+            uMeshSize: {
+                value: {
+                    x: window.innerWidth,
+                    y: window.innerHeight
+                }
+            },
+            uTime: {
+                value: 0
+            }
+        }
+    }
+    init() {
+        this.clock = new h,
+        this.geometry = new c(1,1,32,32),
+        this.material = new w({
+            vertexShader: ie,
+            fragmentShader: te,
+            transparent: !0,
+            uniforms: this.uniforms
+        }),
+        this.mesh = new u(this.geometry,this.material),
+        this.stage.scene.add(this.mesh),
+        this._setWindowSize(),
+        this._setMeshScale(),
+        this._setMeshPosition()
+    }
+    _setWindowSize() {
+        this.windowWidth = window.innerWidth,
+        this.windowHeight = window.innerHeight,
+        this.windowWidthHalf = this.windowWidth * .5,
+        this.windowHeightHalf = this.windowHeight * .5
+    }
+    _setMeshScale() {
+        this.mesh.scale.set(this.windowWidth, this.windowHeight),
+        this.uniforms.uMeshSize.value = {
+            x: this.mesh.scale.x,
+            y: this.mesh.scale.y
+        },
+        this.meshWidthHalf = this.mesh.scale.x * .5,
+        this.meshHeightHalf = this.mesh.scale.y * .5
+    }
+    _setMeshPosition() {
+        this.mesh.position.x = -this.windowWidthHalf + this.meshWidthHalf,
+        this.mesh.position.y = this.windowHeightHalf - this.meshHeightHalf
+    }
+    resize() {
+        this._setWindowSize(),
+        this._setMeshScale()
+    }
+    render() {
+        this.mesh && this._setMeshPosition();
+        const e = this.clock.getElapsedTime();
+        this.time = e,
+        this.uniforms.uTime.value = this.time
+    }
+}
+class ne {
+    constructor() {
+        this.stage = null
+    }
+    init() {
+        this.stage = new ee,
+        this.stage.init(),
+        this.mesh = new se(this.stage),
+        this.mesh.init(),
+        this.onRaf(),
+        this.resize = this.resize.bind(this),
+        window.addEventListener("resize", this.resize)
+    }
+    render() {
+        this.stage.render(),
+        this.mesh.render()
+    }
+    resize() {
+        this.stage.resize(),
+        this.mesh.resize()
+    }
+    onRaf() {
+        d.ticker,
+        this.render(),
+        requestAnimationFrame(this.onRaf.bind(this))
+    }
+}
+class re {
+    constructor() {
+        this.rendererParam = {
+            clearColor: 15724527,
+            width: window.innerWidth,
+            height: window.innerHeight
+        },
+        this.cameraParam = {
+            fov: 60,
+            near: .1,
+            far: 10,
+            lookAt: new g(0,0,0),
+            x: 0,
+            y: 0,
+            z: 1
+        },
+        this.scene = null,
+        this.camera = null,
+        this.renderer = null,
+        this.light = null,
+        this.controls = null,
+        this.webglElement = null,
+        this.isInitialized = !1
+    }
+    init() {
+        this._setScene(),
+        this._setRenderer(),
+        this._setCamera(),
+        this.isInitialized = !0
+    }
+    _setScene() {
+        this.scene = new o
+    }
+    _setRenderer() {
+        this.renderer = new a({
+            alpha: !1,
+            antialias: !0
+        }),
+        this.renderer.setSize(this.rendererParam.width, this.rendererParam.height),
+        this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio)),
+        this.webglElement = document.querySelector("#container"),
+        this.webglElement.appendChild(this.renderer.domElement)
+    }
+    _setCamera() {
+        this.isInitialized || (this.camera = new l(0,0,this.cameraParam.near,this.cameraParam.far),
+        this.camera.position.set(this.cameraParam.x, this.cameraParam.y, this.cameraParam.z),
+        this.camera.lookAt(this.cameraParam.lookAt));
+        const e = window.innerWidth
+          , i = window.innerHeight;
+        this.camera.aspect = e / i,
+        this.camera.fov = v.radToDeg(Math.atan(e / this.camera.aspect / (2 * this.camera.position.z))) * 2,
+        this.camera.updateProjectionMatrix(),
+        this.renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+    render() {
+        this.renderer.render(this.scene, this.camera)
+    }
+    resize() {
+        this._setCamera()
+    }
+}
+var he = `varying vec2 vUv;
+uniform float uTime;
+
+void main(){
+    vUv = uv;
+    vec4 modelPosition = modelMatrix * vec4(position,1.0);
+
+    vec4 viewPosition = viewMatrix * modelPosition;
+    vec4 projectedPosition = projectionMatrix * viewPosition;
+
+    gl_Position = projectedPosition;
+}`
+  , oe = `varying vec2 vUv;
+varying float dis;
+
+uniform float uTime;
+uniform vec2 uMeshSize;
+uniform vec2 uTextureSize;
+uniform float uDispFactor;
+
+uniform sampler2D uTexture1;
+uniform sampler2D uTexture2;
+uniform sampler2D uDispTexture;
+
+void main(){
+    vec2 uvTexture = vUv;
+
+    vec2 resolutionRatio = vec2(
+       min((uMeshSize.x / uMeshSize.y) / (uTextureSize.x / uTextureSize.y), 1.0),
+       min((uMeshSize.y / uMeshSize.x) / (uTextureSize.y / uTextureSize.x), 1.0)
+    );
+    uvTexture -= .5;
+    uvTexture *= resolutionRatio;
+    uvTexture += .5;
+
+    vec4 dispTexture = texture2D(uDispTexture, uvTexture);
+
+    vec2 calcPosition = vec2(uvTexture.x + uDispFactor * (dispTexture.r*-0.65), uvTexture.y);
+    vec2 calcPosition2 = vec2(uvTexture.x - (1.0 - uDispFactor) * (dispTexture.r*-0.65), uvTexture.y);
+
+    vec4 cDist1 = texture2D(uTexture1, calcPosition);
+    vec4 cDist2 = texture2D(uTexture2, calcPosition2);
+
+    vec4 finalColor = mix(cDist1, cDist2, uDispFactor);
+
+    gl_FragColor = finalColor;
+
+}`;
+class ae {
+    constructor(e) {
+        this.stage = e,
+        this.clock = null,
+        this.time = 0,
+        this.geometry = null,
+        this.material = null,
+        this.mesh = null,
+        this.windowWidth = 0,
+        this.windowHeight = 0,
+        this.windowWidthHalf = 0,
+        this.windowHeightHalf = 0,
+        this.meshWidthHalf = 0,
+        this.meshHeightHalf = 0,
+        this.imageArray = ["/image1.png", "/image2.png", "/image3.png", "/image4.png"],
+        this.uniforms = {
+            uTexture1: {
+                value: new r().load(this.imageArray[0])
+            },
+            uTexture2: {
+                value: new r().load(this.imageArray[1])
+            },
+            uDispTexture: {
+                value: new r().load("/disp.png")
+            },
+            uDispFactor: {
+                value: 0
+            },
+            uTextureSize: {
+                value: {
+                    x: 1080,
+                    y: 1080
+                }
+            },
+            uMeshSize: {
+                value: {
+                    x: window.innerWidth,
+                    y: window.innerHeight
+                }
+            },
+            uTime: {
+                value: 0
+            }
+        },
+        this.clickFrag = !1
+    }
+    init() {
+        this.clock = new h,
+        this.geometry = new c(1,1,32,32),
+        this.material = new w({
+            vertexShader: he,
+            fragmentShader: oe,
+            transparent: !0,
+            uniforms: this.uniforms
+        }),
+        this.mesh = new u(this.geometry,this.material),
+        this.stage.scene.add(this.mesh),
+        this._setWindowSize(),
+        this._setMeshScale(),
+        this._setMeshPosition()
+    }
+    _setWindowSize() {
+        this.windowWidth = window.innerWidth,
+        this.windowHeight = window.innerHeight,
+        this.windowWidthHalf = this.windowWidth * .5,
+        this.windowHeightHalf = this.windowHeight * .5
+    }
+    _setMeshScale() {
+        this.mesh.scale.set(this.windowWidth, this.windowHeight),
+        this.uniforms.uMeshSize.value = {
+            x: this.mesh.scale.x,
+            y: this.mesh.scale.y
+        },
+        this.meshWidthHalf = this.mesh.scale.x * .5,
+        this.meshHeightHalf = this.mesh.scale.y * .5
+    }
+    _setMeshPosition() {
+        this.mesh.position.x = -this.windowWidthHalf + this.meshWidthHalf,
+        this.mesh.position.y = this.windowHeightHalf - this.meshHeightHalf
+    }
+    onClick() {
+        this.clickFrag ? (this.clickFrag = !1,
+        d.to(this.uniforms.uDispFactor, {
+            duration: .5,
+            value: 0,
+            ease: f.easeInOut
+        })) : (this.clickFrag = !0,
+        d.to(this.uniforms.uDispFactor, {
+            duration: .5,
+            value: 1,
+            ease: f.easeInOut
+        }))
+    }
+    resize() {
+        this._setWindowSize(),
+        this._setMeshScale()
+    }
+    render() {
+        this.mesh && this._setMeshPosition();
+        const e = this.clock.getElapsedTime();
+        this.time = e,
+        this.uniforms.uTime.value = this.time
+    }
+}
+class le {
+    constructor() {
+        this.stage = null
+    }
+    init() {
+        this.stage = new re,
+        this.stage.init(),
+        this.mesh = new ae(this.stage),
+        this.mesh.init(),
+        this.onRaf(),
+        this.resize = this.resize.bind(this),
+        window.addEventListener("resize", this.resize),
+        this.onClick = this.onClick.bind(this),
+        window.addEventListener("click", this.onClick)
+    }
+    render() {
+        this.stage.render(),
+        this.mesh.render()
+    }
+    resize() {
+        this.stage.resize(),
+        this.mesh.resize()
+    }
+    onClick() {
+        this.mesh.onClick()
+    }
+    onRaf() {
+        d.ticker,
+        this.render(),
+        requestAnimationFrame(this.onRaf.bind(this))
+    }
+}
+class z {
+    static loadResource(e) {
+        return new Promise((i,t)=>{
+            fetch(e).then(s=>s.text()).then(s=>{
+                i(s)
+            }
+            ).catch(s=>{
+                t(s)
+            }
+            )
+        }
+        )
+    }
+    static lerp(e, i, t) {
+        return (1 - t) * e + t * i
+    }
+}
+class ue {
+    constructor() {
+        this.rendererParam = {
+            clearColor: 15724527,
+            width: window.innerWidth,
+            height: window.innerHeight
+        },
+        this.cameraParam = {
+            fov: 60,
+            near: .1,
+            far: 10,
+            lookAt: new g(0,0,0),
+            x: 0,
+            y: 0,
+            z: 1
+        },
+        this.scene = null,
+        this.camera = null,
+        this.renderer = null,
+        this.light = null,
+        this.controls = null,
+        this.webglElement = null,
+        this.isInitialized = !1
+    }
+    init() {
+        this._setScene(),
+        this._setRenderer(),
+        this._setCamera(),
+        this.isInitialized = !0
+    }
+    _setScene() {
+        this.scene = new o
+    }
+    _setRenderer() {
+        this.renderer = new a({
+            alpha: !1,
+            antialias: !0
+        }),
+        this.renderer.setSize(this.rendererParam.width, this.rendererParam.height),
+        this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio)),
+        this.webglElement = document.querySelector("#container"),
+        this.webglElement.appendChild(this.renderer.domElement)
+    }
+    _setCamera() {
+        this.isInitialized || (this.camera = new l(0,0,this.cameraParam.near,this.cameraParam.far),
+        this.camera.position.set(this.cameraParam.x, this.cameraParam.y, this.cameraParam.z),
+        this.camera.lookAt(this.cameraParam.lookAt));
+        const e = window.innerWidth
+          , i = window.innerHeight;
+        this.camera.aspect = e / i,
+        this.camera.fov = v.radToDeg(Math.atan(e / this.camera.aspect / (2 * this.camera.position.z))) * 2,
+        this.camera.updateProjectionMatrix(),
+        this.renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+    render() {
+        this.renderer.render(this.scene, this.camera)
+    }
+    resize() {
+        this._setCamera()
+    }
+}
+var me = `varying vec2 vUv;
+uniform float uTime;
+
+void main(){
+    vUv = uv;
+    vec4 modelPosition = modelMatrix * vec4(position,1.0);
+
+    vec4 viewPosition = viewMatrix * modelPosition;
+    vec4 projectedPosition = projectionMatrix * viewPosition;
+
+    gl_Position = projectedPosition;
+}`
+  , de = `varying vec2 vUv;
+
+uniform float uTime;
+uniform vec2 uMouse;
+uniform vec2 uMouseDiff;
+uniform vec2 uMeshSize;
+uniform vec2 uTextureSize;
+uniform float uScaleCircle;
+uniform float uDispFactor;
+
+uniform sampler2D uTexture1;
+uniform sampler2D uTexture2;
+uniform sampler2D uDispTexture;
+
+void main(){
+    vec2 uvTexture = vUv;
+
+    vec2 resolutionRatio = vec2(
+       min((uMeshSize.x / uMeshSize.y) / (uTextureSize.x / uTextureSize.y), 1.0),
+       min((uMeshSize.y / uMeshSize.x) / (uTextureSize.y / uTextureSize.x), 1.0)
+    );
+    uvTexture -= .5;
+    uvTexture *= resolutionRatio;
+    uvTexture += .5;
+
+    vec4 dispTexture = texture2D(uDispTexture, uvTexture);
+
+    vec2 uvCircle = vUv * 2.0 - 1.0;
+    uvCircle -= uMouse;
+    vec2 uvCricleResolutionRatio = vec2(
+        min((uMeshSize.y / uMeshSize.x), 1.),
+        min((uMeshSize.x / uMeshSize.y), 1.)
+    );
+    uvCircle /= uvCricleResolutionRatio;
+    float circle = length(uvCircle);
+
+    vec2 dispPos = vec2(uvTexture.x + (1.0 - uDispFactor) * (dispTexture.r*circle), uvTexture.y + (1.0 - uDispFactor) * (dispTexture.r*circle));
+
+    vec4 textureColor1 = texture2D(uTexture1, dispPos);
+    vec4 textureColor2 = texture2D(uTexture2, uvTexture);
+
+    vec4 finalColor = mix(
+        textureColor1, 
+        textureColor2, 
+        step(.2 + uScaleCircle,circle)
+    );
+
+    gl_FragColor = finalColor;
+}`;
+class ce {
+    constructor(e) {
+        this.stage = e,
+        this.clock = null,
+        this.time = 0,
+        this.geometry = null,
+        this.material = null,
+        this.mesh = null,
+        this.windowWidth = 0,
+        this.windowHeight = 0,
+        this.windowWidthHalf = 0,
+        this.windowHeightHalf = 0,
+        this.meshWidthHalf = 0,
+        this.meshHeightHalf = 0,
+        this.imageArray = ["/image1.png", "/image2.png", "/image3.png", "/image4.png"],
+        this.uniforms = {
+            uTexture1: {
+                value: new r().load(this.imageArray[0])
+            },
+            uTexture2: {
+                value: new r().load(this.imageArray[1])
+            },
+            uDispTexture: {
+                value: new r().load("/disp.png")
+            },
+            uDispFactor: {
+                value: 0
+            },
+            uScaleCircle: {
+                value: 0
+            },
+            uTextureSize: {
+                value: {
+                    x: 1080,
+                    y: 1080
+                }
+            },
+            uMeshSize: {
+                value: {
+                    x: window.innerWidth,
+                    y: window.innerHeight
+                }
+            },
+            uTime: {
+                value: 0
+            },
+            uMouse: {
+                value: {
+                    x: 0,
+                    y: 0
+                }
+            },
+            uMouseDiff: {
+                value: {
+                    x: 0,
+                    y: 0
+                }
+            }
+        },
+        this.mouse = null,
+        this.clickFrag = !1
+    }
+    init() {
+        this.clock = new h,
+        this.geometry = new c(1,1,32,32),
+        this.material = new w({
+            vertexShader: me,
+            fragmentShader: de,
+            transparent: !0,
+            uniforms: this.uniforms
+        }),
+        this.mesh = new u(this.geometry,this.material),
+        this.stage.scene.add(this.mesh),
+        this._setWindowSize(),
+        this._setMeshScale(),
+        this._setMeshPosition()
+    }
+    _setWindowSize() {
+        this.windowWidth = window.innerWidth,
+        this.windowHeight = window.innerHeight,
+        this.windowWidthHalf = this.windowWidth * .5,
+        this.windowHeightHalf = this.windowHeight * .5
+    }
+    _setMeshScale() {
+        this.mesh.scale.set(this.windowWidth, this.windowHeight),
+        this.uniforms.uMeshSize.value = {
+            x: this.mesh.scale.x,
+            y: this.mesh.scale.y
+        },
+        this.meshWidthHalf = this.mesh.scale.x * .5,
+        this.meshHeightHalf = this.mesh.scale.y * .5
+    }
+    _setMeshPosition() {
+        this.mesh.position.x = -this.windowWidthHalf + this.meshWidthHalf,
+        this.mesh.position.y = this.windowHeightHalf - this.meshHeightHalf
+    }
+    onClick() {
+        this.clickFrag ? (this.clickFrag = !1,
+        d.to(this.uniforms.uScaleCircle, {
+            duration: .5,
+            value: 0,
+            ease: f.easeInOut
+        }),
+        d.to(this.uniforms.uDispFactor, {
+            duration: .5,
+            value: 0,
+            ease: f.easeInOut
+        })) : (this.clickFrag = !0,
+        d.to(this.uniforms.uScaleCircle, {
+            duration: .5,
+            value: 1,
+            ease: f.easeInOut
+        }),
+        d.to(this.uniforms.uDispFactor, {
+            duration: .5,
+            value: 1,
+            ease: f.easeInOut
+        }))
+    }
+    resize() {
+        this._setWindowSize(),
+        this._setMeshScale()
+    }
+    render(e, i) {
+        this.mesh && this._setMeshPosition();
+        const t = this.clock.getElapsedTime();
+        this.time = t,
+        this.uniforms.uMouse.value = e,
+        this.uniforms.uMouseDiff.value = i,
+        this.uniforms.uTime.value = this.time
+    }
+}
+class we {
+    constructor() {
+        this.stage = null,
+        this.mouse = {
+            x: 0,
+            y: 0
+        },
+        this.mouseEase = {
+            x: 0,
+            y: 0
+        },
+        this.mouseDiff = {
+            x: 0,
+            y: 0
+        }
+    }
+    init() {
+        this.stage = new ue,
+        this.stage.init(),
+        this.mesh = new ce(this.stage),
+        this.mesh.init(),
+        this.onRaf(),
+        this.resize = this.resize.bind(this),
+        window.addEventListener("resize", this.resize),
+        this.onClick = this.onClick.bind(this),
+        window.addEventListener("click", this.onClick),
+        this.onMouseMove = this.onMouseMove.bind(this),
+        window.addEventListener("mousemove", this.onMouseMove)
+    }
+    render() {
+        this.mouseEase = {
+            x: z.lerp(this.mouseEase.x, this.mouse.x, .1),
+            y: z.lerp(this.mouseEase.y, this.mouse.y, .1)
+        },
+        this.mouseDiff = {
+            x: z.lerp(this.mouseDiff.x, this.mouse.x - this.mouseEase.x, .1),
+            y: z.lerp(this.mouseDiff.y, this.mouse.y - this.mouseEase.y, .1)
+        },
+        this.stage.render(),
+        this.mesh.render(this.mouseEase, this.mouseDiff)
+    }
+    resize() {
+        this.stage.resize(),
+        this.mesh.resize()
+    }
+    onClick() {
+        this.mesh.onClick()
+    }
+    onMouseMove(e) {
+        this.mouse = {
+            x: e.clientX / window.innerWidth * 2 - 1,
+            y: -(e.clientY / window.innerHeight) * 2 + 1
+        }
+    }
+    onRaf() {
+        this.render(),
+        requestAnimationFrame(this.onRaf.bind(this))
+    }
+}
+class M {
+    static loadResource(e) {
+        return new Promise((i,t)=>{
+            fetch(e).then(s=>s.text()).then(s=>{
+                i(s)
+            }
+            ).catch(s=>{
+                t(s)
+            }
+            )
+        }
+        )
+    }
+    static lerp(e, i, t) {
+        return (1 - t) * e + t * i
+    }
+}
+class ge {
+    constructor() {
+        this.rendererParam = {
+            clearColor: 15724527,
+            width: window.innerWidth,
+            height: window.innerHeight
+        },
+        this.cameraParam = {
+            fov: 60,
+            near: .1,
+            far: 10,
+            lookAt: new g(0,0,0),
+            x: 0,
+            y: 0,
+            z: 1
+        },
+        this.scene = null,
+        this.camera = null,
+        this.renderer = null,
+        this.light = null,
+        this.controls = null,
+        this.webglElement = null,
+        this.isInitialized = !1
+    }
+    init() {
+        this._setScene(),
+        this._setRenderer(),
+        this._setCamera(),
+        this.isInitialized = !0
+    }
+    _setScene() {
+        this.scene = new o
+    }
+    _setRenderer() {
+        this.renderer = new a({
+            alpha: !1,
+            antialias: !0
+        }),
+        this.renderer.setSize(this.rendererParam.width, this.rendererParam.height),
+        this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio)),
+        this.webglElement = document.querySelector("#container"),
+        this.webglElement.appendChild(this.renderer.domElement)
+    }
+    _setCamera() {
+        this.isInitialized || (this.camera = new l(0,0,this.cameraParam.near,this.cameraParam.far),
+        this.camera.position.set(this.cameraParam.x, this.cameraParam.y, this.cameraParam.z),
+        this.camera.lookAt(this.cameraParam.lookAt));
+        const e = window.innerWidth
+          , i = window.innerHeight;
+        this.camera.aspect = e / i,
+        this.camera.fov = v.radToDeg(Math.atan(e / this.camera.aspect / (2 * this.camera.position.z))) * 2,
+        this.camera.updateProjectionMatrix(),
+        this.renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+    render() {
+        this.renderer.render(this.scene, this.camera)
+    }
+    resize() {
+        this._setCamera()
+    }
+}
+var ve = `varying vec2 vUv;
+uniform float uTime;
+
+void main(){
+    vUv = uv;
+    vec4 modelPosition = modelMatrix * vec4(position,1.0);
+
+    vec4 viewPosition = viewMatrix * modelPosition;
+    vec4 projectedPosition = projectionMatrix * viewPosition;
+
+    gl_Position = projectedPosition;
+}`
+  , fe = `varying vec2 vUv;
+
+uniform float uTime;
+uniform float uClampValue;
+uniform vec2 uMouse;
+uniform vec2 uMouseDiff;
+uniform vec2 uMeshSize;
+uniform vec2 uTextureSize;
+
+uniform sampler2D uTexture1;
+
+void main(){
+    vec2 uvTexture = vUv;
+
+    vec2 resolutionRatio = vec2(
+       min((uMeshSize.x / uMeshSize.y) / (uTextureSize.x / uTextureSize.y), 1.0),
+       min((uMeshSize.y / uMeshSize.x) / (uTextureSize.y / uTextureSize.x), 1.0)
+    );
+    uvTexture -= .5;
+    uvTexture *= resolutionRatio;
+    uvTexture += .5;
+
+    vec2 clampTexture = vec2(min(uvTexture.x,uMouse.x),uvTexture.y);
+
+    vec4 textureColor1 = texture2D(uTexture1, clampTexture);
+
+    gl_FragColor = textureColor1;
+}`;
+class xe {
+    constructor(e) {
+        this.stage = e,
+        this.clock = null,
+        this.time = 0,
+        this.geometry = null,
+        this.material = null,
+        this.mesh = null,
+        this.windowWidth = 0,
+        this.windowHeight = 0,
+        this.windowWidthHalf = 0,
+        this.windowHeightHalf = 0,
+        this.meshWidthHalf = 0,
+        this.meshHeightHalf = 0,
+        this.imageArray = ["/image1.png", "/image2.png", "/image3.png", "/image4.png", "/image5.png"],
+        this.uniforms = {
+            uTexture1: {
+                value: new r().load(this.imageArray[3])
+            },
+            uTexture2: {
+                value: new r().load(this.imageArray[4])
+            },
+            uTextureSize: {
+                value: {
+                    x: 1080,
+                    y: 1080
+                }
+            },
+            uMeshSize: {
+                value: {
+                    x: window.innerWidth,
+                    y: window.innerHeight
+                }
+            },
+            uClampValue: {
+                value: 0
+            },
+            uTime: {
+                value: 0
+            },
+            uMouse: {
+                value: {
+                    x: 0,
+                    y: 0
+                }
+            },
+            uMouseDiff: {
+                value: {
+                    x: 0,
+                    y: 0
+                }
+            }
+        },
+        this.mouse = null,
+        this.clickFrag = !1
+    }
+    init() {
+        this.clock = new h,
+        this.geometry = new c(1,1,32,32),
+        this.material = new w({
+            vertexShader: ve,
+            fragmentShader: fe,
+            transparent: !0,
+            uniforms: this.uniforms
+        }),
+        this.mesh = new u(this.geometry,this.material),
+        this.stage.scene.add(this.mesh),
+        this._setWindowSize(),
+        this._setMeshScale(),
+        this._setMeshPosition()
+    }
+    _setWindowSize() {
+        this.windowWidth = window.innerWidth,
+        this.windowHeight = window.innerHeight,
+        this.windowWidthHalf = this.windowWidth * .5,
+        this.windowHeightHalf = this.windowHeight * .5
+    }
+    _setMeshScale() {
+        this.mesh.scale.set(this.windowWidth, this.windowHeight),
+        this.uniforms.uMeshSize.value = {
+            x: this.mesh.scale.x,
+            y: this.mesh.scale.y
+        },
+        this.meshWidthHalf = this.mesh.scale.x * .5,
+        this.meshHeightHalf = this.mesh.scale.y * .5
+    }
+    _setMeshPosition() {
+        this.mesh.position.x = -this.windowWidthHalf + this.meshWidthHalf,
+        this.mesh.position.y = this.windowHeightHalf - this.meshHeightHalf
+    }
+    onClick() {}
+    onMouseMove(e) {
+        this.mouse = e,
+        this.uniforms.uMouse.value = this.mouse
+    }
+    resize() {
+        this._setWindowSize(),
+        this._setMeshScale()
+    }
+    render(e, i) {
+        this.mesh && this._setMeshPosition();
+        const t = this.clock.getElapsedTime();
+        this.time = t,
+        this.uniforms.uMouse.value = e,
+        this.uniforms.uMouseDiff.value = i,
+        this.uniforms.uTime.value = this.time
+    }
+}
+class pe {
+    constructor() {
+        this.stage = null,
+        this.mouse = {
+            x: 0,
+            y: 0
+        },
+        this.mouseEase = {
+            x: 0,
+            y: 0
+        },
+        this.mouseDiff = {
+            x: 0,
+            y: 0
+        }
+    }
+    init() {
+        this.stage = new ge,
+        this.stage.init(),
+        this.mesh = new xe(this.stage),
+        this.mesh.init(),
+        this.onRaf(),
+        this.resize = this.resize.bind(this),
+        window.addEventListener("resize", this.resize),
+        this.onClick = this.onClick.bind(this),
+        window.addEventListener("click", this.onClick),
+        this.onMouseMove = this.onMouseMove.bind(this),
+        window.addEventListener("mousemove", this.onMouseMove)
+    }
+    render() {
+        this.mouseEase = {
+            x: M.lerp(this.mouseEase.x, this.mouse.x, .1),
+            y: M.lerp(this.mouseEase.y, this.mouse.y, .1)
+        },
+        this.mouseDiff = {
+            x: M.lerp(this.mouseDiff.x, this.mouseEase.x, .1),
+            y: M.lerp(this.mouseDiff.y, this.mouseEase.y, .1)
+        },
+        this.stage.render(),
+        this.mesh.render(this.mouseEase, this.mouseDiff)
+    }
+    resize() {
+        this.stage.resize(),
+        this.mesh.resize()
+    }
+    onClick() {
+        this.mesh.onClick()
+    }
+    onMouseMove(e) {
+        this.mouse = {
+            x: e.clientX / window.innerWidth,
+            y: -(e.clientY / window.innerHeight) * 2 + 1
+        },
+        console.log(this.mouse),
+        this.mesh.onMouseMove(this.mouse)
+    }
+    onRaf() {
+        this.render(),
+        requestAnimationFrame(this.onRaf.bind(this))
+    }
+}
+class y {
+    static loadResource(e) {
+        return new Promise((i,t)=>{
+            fetch(e).then(s=>s.text()).then(s=>{
+                i(s)
+            }
+            ).catch(s=>{
+                t(s)
+            }
+            )
+        }
+        )
+    }
+    static lerp(e, i, t) {
+        return (1 - t) * e + t * i
+    }
+}
+class Se {
+    constructor() {
+        this.rendererParam = {
+            clearColor: 15724527,
+            width: window.innerWidth,
+            height: window.innerHeight
+        },
+        this.cameraParam = {
+            fov: 60,
+            near: .1,
+            far: 10,
+            lookAt: new g(0,0,0),
+            x: 0,
+            y: 0,
+            z: 1
+        },
+        this.scene = null,
+        this.camera = null,
+        this.renderer = null,
+        this.light = null,
+        this.controls = null,
+        this.webglElement = null,
+        this.isInitialized = !1
+    }
+    init() {
+        this._setScene(),
+        this._setRenderer(),
+        this._setCamera(),
+        this.isInitialized = !0
+    }
+    _setScene() {
+        this.scene = new o
+    }
+    _setRenderer() {
+        this.renderer = new a({
+            alpha: !1,
+            antialias: !0
+        }),
+        this.renderer.setSize(this.rendererParam.width, this.rendererParam.height),
+        this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio)),
+        this.webglElement = document.querySelector("#container"),
+        this.webglElement.appendChild(this.renderer.domElement)
+    }
+    _setCamera() {
+        this.isInitialized || (this.camera = new l(0,0,this.cameraParam.near,this.cameraParam.far),
+        this.camera.position.set(this.cameraParam.x, this.cameraParam.y, this.cameraParam.z),
+        this.camera.lookAt(this.cameraParam.lookAt));
+        const e = window.innerWidth
+          , i = window.innerHeight;
+        this.camera.aspect = e / i,
+        this.camera.fov = v.radToDeg(Math.atan(e / this.camera.aspect / (2 * this.camera.position.z))) * 2,
+        this.camera.updateProjectionMatrix(),
+        this.renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+    render() {
+        this.renderer.render(this.scene, this.camera)
+    }
+    resize() {
+        this._setCamera()
+    }
+}
+var ze = `varying vec2 vUv;
+uniform float uTime;
+
+void main(){
+    vUv = uv;
+    vec4 modelPosition = modelMatrix * vec4(position,1.0);
+
+    vec4 viewPosition = viewMatrix * modelPosition;
+    vec4 projectedPosition = projectionMatrix * viewPosition;
+
+    gl_Position = projectedPosition;
+}`
+  , Me = `varying vec2 vUv;
+
+uniform float uTime;
+uniform float uNoiseStrength;
+uniform float uVignetteStrength;
+
+uniform vec2 uMouse;
+uniform vec2 uMouseDiff;
+uniform vec2 uMeshSize;
+uniform vec2 uTextureSize;
+
+uniform sampler2D uTexture1;
+
+float noiseFilter(vec2 p){
+    return fract(sin(dot(p ,vec2(12.9898,78.233))) * 43758.5453);
+}
+
+
+void main(){
+    vec2 uvTexture = vUv;
+
+    vec2 resolutionRatio = vec2(
+       min((uMeshSize.x / uMeshSize.y) / (uTextureSize.x / uTextureSize.y), 1.0),
+       min((uMeshSize.y / uMeshSize.x) / (uTextureSize.y / uTextureSize.x), 1.0)
+    );
+    uvTexture -= .5;
+    uvTexture *= resolutionRatio;
+    uvTexture += .5;
+
+    vec4 textureColor1 = texture2D(uTexture1, uvTexture);
+
+    float noise = noiseFilter(vUv.xy + uTime * 0.01);
+    noise = 1.0 - noise * uNoiseStrength;
+
+    vec2 vignetteUv = uvTexture * 2.0 - 1.0;
+    float vignette = uVignetteStrength - length(vignetteUv);
+
+    gl_FragColor = vec4(vec3(textureColor1) * noise * vignette,1.0);
+}`;
+class ye {
+    constructor(e) {
+        this.stage = e,
+        this.clock = null,
+        this.time = 0,
+        this.geometry = null,
+        this.material = null,
+        this.mesh = null,
+        this.windowWidth = 0,
+        this.windowHeight = 0,
+        this.windowWidthHalf = 0,
+        this.windowHeightHalf = 0,
+        this.meshWidthHalf = 0,
+        this.meshHeightHalf = 0,
+        this.imageArray = ["/image1.png", "/image2.png", "/image3.png", "/image4.png", "/image5.png"],
+        this.uniforms = {
+            uTexture1: {
+                value: new r().load(this.imageArray[1])
+            },
+            uTexture2: {
+                value: new r().load(this.imageArray[4])
+            },
+            uTextureSize: {
+                value: {
+                    x: 1080,
+                    y: 1080
+                }
+            },
+            uMeshSize: {
+                value: {
+                    x: window.innerWidth,
+                    y: window.innerHeight
+                }
+            },
+            uNoiseStrength: {
+                value: .5
+            },
+            uVignetteStrength: {
+                value: 1
+            },
+            uTime: {
+                value: 0
+            },
+            uMouse: {
+                value: {
+                    x: 0,
+                    y: 0
+                }
+            },
+            uMouseDiff: {
+                value: {
+                    x: 0,
+                    y: 0
+                }
+            }
+        },
+        this.mouse = null,
+        this.clickFrag = !1
+    }
+    init() {
+        this.clock = new h,
+        this.geometry = new c(1,1,32,32),
+        this.material = new w({
+            vertexShader: ze,
+            fragmentShader: Me,
+            transparent: !0,
+            uniforms: this.uniforms
+        }),
+        this.mesh = new u(this.geometry,this.material),
+        this.stage.scene.add(this.mesh),
+        this._setWindowSize(),
+        this._setMeshScale(),
+        this._setMeshPosition(),
+        this._debug()
+    }
+    _debug() {
+        const e = new L;
+        e.add(this.uniforms.uNoiseStrength, "value").min(0).max(1).step(.1).name("uNoiseStrength"),
+        e.add(this.uniforms.uVignetteStrength, "value").min(0).max(2).step(.1).name("uVignetteStrength")
+    }
+    _setWindowSize() {
+        this.windowWidth = window.innerWidth,
+        this.windowHeight = window.innerHeight,
+        this.windowWidthHalf = this.windowWidth * .5,
+        this.windowHeightHalf = this.windowHeight * .5
+    }
+    _setMeshScale() {
+        this.mesh.scale.set(this.windowWidth, this.windowHeight),
+        this.uniforms.uMeshSize.value = {
+            x: this.mesh.scale.x,
+            y: this.mesh.scale.y
+        },
+        this.meshWidthHalf = this.mesh.scale.x * .5,
+        this.meshHeightHalf = this.mesh.scale.y * .5
+    }
+    _setMeshPosition() {
+        this.mesh.position.x = -this.windowWidthHalf + this.meshWidthHalf,
+        this.mesh.position.y = this.windowHeightHalf - this.meshHeightHalf
+    }
+    onClick() {}
+    onMouseMove(e) {
+        this.mouse = e,
+        this.uniforms.uMouse.value = this.mouse
+    }
+    resize() {
+        this._setWindowSize(),
+        this._setMeshScale()
+    }
+    render(e, i) {
+        this.mesh && this._setMeshPosition();
+        const t = this.clock.getElapsedTime();
+        this.time = t,
+        this.uniforms.uMouse.value = e,
+        this.uniforms.uMouseDiff.value = i,
+        this.uniforms.uTime.value = this.time
+    }
+}
+class Te {
+    constructor() {
+        this.stage = null,
+        this.mouse = {
+            x: 0,
+            y: 0
+        },
+        this.mouseEase = {
+            x: 0,
+            y: 0
+        },
+        this.mouseDiff = {
+            x: 0,
+            y: 0
+        }
+    }
+    init() {
+        this.stage = new Se,
+        this.stage.init(),
+        this.mesh = new ye(this.stage),
+        this.mesh.init(),
+        this.onRaf(),
+        this.resize = this.resize.bind(this),
+        window.addEventListener("resize", this.resize),
+        this.onClick = this.onClick.bind(this),
+        window.addEventListener("click", this.onClick),
+        this.onMouseMove = this.onMouseMove.bind(this),
+        window.addEventListener("mousemove", this.onMouseMove)
+    }
+    render() {
+        this.mouseEase = {
+            x: y.lerp(this.mouseEase.x, this.mouse.x, .1),
+            y: y.lerp(this.mouseEase.y, this.mouse.y, .1)
+        },
+        this.mouseDiff = {
+            x: y.lerp(this.mouseDiff.x, this.mouseEase.x, .1),
+            y: y.lerp(this.mouseDiff.y, this.mouseEase.y, .1)
+        },
+        this.stage.render(),
+        this.mesh.render(this.mouseEase, this.mouseDiff)
+    }
+    resize() {
+        this.stage.resize(),
+        this.mesh.resize()
+    }
+    onClick() {
+        this.mesh.onClick()
+    }
+    onMouseMove(e) {
+        this.mouse = {
+            x: e.clientX / window.innerWidth,
+            y: -(e.clientY / window.innerHeight) * 2 + 1
+        },
+        this.mesh.onMouseMove(this.mouse)
+    }
+    onRaf() {
+        this.render(),
+        requestAnimationFrame(this.onRaf.bind(this))
+    }
+}
+class T {
+    static loadResource(e) {
+        return new Promise((i,t)=>{
+            fetch(e).then(s=>s.text()).then(s=>{
+                i(s)
+            }
+            ).catch(s=>{
+                t(s)
+            }
+            )
+        }
+        )
+    }
+    static lerp(e, i, t) {
+        return (1 - t) * e + t * i
+    }
+}
+class Pe {
+    constructor() {
+        this.rendererParam = {
+            clearColor: 15724527,
+            width: window.innerWidth,
+            height: window.innerHeight
+        },
+        this.cameraParam = {
+            fov: 60,
+            near: .1,
+            far: 10,
+            lookAt: new g(0,0,0),
+            x: 0,
+            y: 0,
+            z: 1
+        },
+        this.scene = null,
+        this.camera = null,
+        this.renderer = null,
+        this.light = null,
+        this.controls = null,
+        this.webglElement = null,
+        this.isInitialized = !1
+    }
+    init() {
+        this._setScene(),
+        this._setRenderer(),
+        this._setCamera(),
+        this.isInitialized = !0
+    }
+    _setScene() {
+        this.scene = new o
+    }
+    _setRenderer() {
+        this.renderer = new a({
+            alpha: !1,
+            antialias: !0
+        }),
+        this.renderer.setSize(this.rendererParam.width, this.rendererParam.height),
+        this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio)),
+        this.webglElement = document.querySelector("#container"),
+        this.webglElement.appendChild(this.renderer.domElement)
+    }
+    _setCamera() {
+        this.isInitialized || (this.camera = new l(0,0,this.cameraParam.near,this.cameraParam.far),
+        this.camera.position.set(this.cameraParam.x, this.cameraParam.y, this.cameraParam.z),
+        this.camera.lookAt(this.cameraParam.lookAt));
+        const e = window.innerWidth
+          , i = window.innerHeight;
+        this.camera.aspect = e / i,
+        this.camera.fov = v.radToDeg(Math.atan(e / this.camera.aspect / (2 * this.camera.position.z))) * 2,
+        this.camera.updateProjectionMatrix(),
+        this.renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+    render() {
+        this.renderer.render(this.scene, this.camera)
+    }
+    resize() {
+        this._setCamera()
+    }
+}
+var He = `varying vec2 vUv;
+uniform float uTime;
+
+void main(){
+    vUv = uv;
+    vec4 modelPosition = modelMatrix * vec4(position,1.0);
+
+    vec4 viewPosition = viewMatrix * modelPosition;
+    vec4 projectedPosition = projectionMatrix * viewPosition;
+
+    gl_Position = projectedPosition;
+}`
+  , Ee = `varying vec2 vUv;
+
+uniform float uTime;
+uniform float uNoiseStrength;
+uniform float uVignetteStrength;
+
+uniform vec2 uMouse;
+uniform vec2 uMouseDiff;
+uniform vec2 uMeshSize;
+uniform vec2 uTextureSize;
+
+uniform sampler2D uTexture1;
+
+// webgl-noise
+ 
+// Description : Array and textureless GLSL 2D/3D/4D simplex noise functions.
+//      Author : Ian McEwan,Ashima Arts.
+//  Maintainer : stegu
+//     Lastmod : 20201014(stegu)
+//     License : Copyright(C)2011 Ashima Arts.All rights reserved.
+//               Distributed under the MIT License.See LICENSE file.
+//               https://github.com/ashima/webgl-noise
+//               https://github.com/stegu/webgl-noise
+
+vec3 mod289(vec3 x){ return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec4 mod289(vec4 x){ return x - floor(x * (1.0 / 289.0)) * 289.0; }
+vec4 permute(vec4 x){ return mod289(((x*34.0)+1.0)*x); }
+vec4 taylorInvSqrt(vec4 r){ return 1.79284291400159 - 0.85373472095314 * r; }
+
+float snoise(vec3 v){
+    const vec2 C = vec2(1.0/6.0, 1.0/3.0);
+    const vec4 D = vec4(0.0, 0.5, 1.0, 2.0);
+    vec3 i  = floor(v + dot(v, C.yyy) );
+    vec3 x0 = v - i + dot(i, C.xxx) ;
+    vec3 g = step(x0.yzx, x0.xyz);
+    vec3 l = 1.0 - g;
+    vec3 i1 = min( g.xyz, l.zxy );
+    vec3 i2 = max( g.xyz, l.zxy );
+    vec3 x1 = x0 - i1 + C.xxx;
+    vec3 x2 = x0 - i2 + C.yyy;
+    vec3 x3 = x0 - D.yyy;
+    i = mod289(i);
+    vec4 p = permute(permute(permute(
+                i.z + vec4(0.0, i1.z, i2.z, 1.0))
+            + i.y + vec4(0.0, i1.y, i2.y, 1.0))
+            + i.x + vec4(0.0, i1.x, i2.x, 1.0));
+    float n_ = 0.142857142857;
+    vec3 ns = n_ * D.wyz - D.xzx;
+    vec4 j = p - 49.0 * floor(p * ns.z * ns.z);
+    vec4 x_ = floor(j * ns.z);
+    vec4 y_ = floor(j - 7.0 * x_);
+    vec4 x = x_ * ns.x + ns.yyyy;
+    vec4 y = y_ * ns.x + ns.yyyy;
+    vec4 h = 1.0 - abs(x) - abs(y);
+    vec4 b0 = vec4(x.xy, y.xy);
+    vec4 b1 = vec4(x.zw, y.zw);
+    vec4 s0 = floor(b0)*2.0 + 1.0;
+    vec4 s1 = floor(b1)*2.0 + 1.0;
+    vec4 sh = -step(h, vec4(0.0));
+    vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy;
+    vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww;
+    vec3 p0 = vec3(a0.xy,h.x);
+    vec3 p1 = vec3(a0.zw,h.y);
+    vec3 p2 = vec3(a1.xy,h.z);
+    vec3 p3 = vec3(a1.zw,h.w);
+    vec4 norm = taylorInvSqrt(vec4(dot(p0,p0),dot(p1,p1),dot(p2, p2),dot(p3,p3)));
+    p0 *= norm.x;
+    p1 *= norm.y;
+    p2 *= norm.z;
+    p3 *= norm.w;
+    vec4 m = max(0.5 - vec4(dot(x0,x0),dot(x1,x1),dot(x2,x2),dot(x3,x3)),0.0);
+    m = m * m;
+    return 105.0 * dot(m*m,vec4(dot(p0,x0),dot(p1,x1),dot(p2,x2),dot(p3,x3)));
+}
+
+
+
+void main(){
+    vec2 uvTexture = vUv;
+
+    vec2 resolutionRatio = vec2(
+       min((uMeshSize.x / uMeshSize.y) / (uTextureSize.x / uTextureSize.y), 1.0),
+       min((uMeshSize.y / uMeshSize.x) / (uTextureSize.y / uTextureSize.x), 1.0)
+    );
+    uvTexture -= .5;
+    uvTexture *= resolutionRatio;
+    uvTexture += .5;
+
+    // vec4 textureColor1 = texture2D(uTexture1, uvTexture);
+
+    vec3 red = vec3(2.5,1.5,uTime * 0.1);
+    vec3 green = vec3(2.0,1.0,uTime * 0.2);
+    vec3 blue = vec3(2.0,2.0,uTime * 0.5);
+
+    float r = 1.0 + snoise(vec3(red.x * uvTexture.x,red.y * uvTexture.y,red.z));
+    float g = 1.0 + snoise(vec3(green.x * uvTexture.x,green.y * uvTexture.y,green.z));
+    float b = 1.0 + snoise(vec3(blue.x * uvTexture.x,blue.y * uvTexture.y,blue.z));
+
+    r = step(.9,r);
+    g = step(.9,g);
+    b = step(.9,b);
+
+    gl_FragColor = vec4(r,g,b,1.0);
+}`;
+class _e {
+    constructor(e) {
+        this.stage = e,
+        this.clock = null,
+        this.time = 0,
+        this.geometry = null,
+        this.material = null,
+        this.mesh = null,
+        this.windowWidth = 0,
+        this.windowHeight = 0,
+        this.windowWidthHalf = 0,
+        this.windowHeightHalf = 0,
+        this.meshWidthHalf = 0,
+        this.meshHeightHalf = 0,
+        this.imageArray = ["/image1.png", "/image2.png", "/image3.png", "/image4.png", "/image5.png"],
+        this.uniforms = {
+            uTexture1: {
+                value: new r().load(this.imageArray[0])
+            },
+            uTexture2: {
+                value: new r().load(this.imageArray[4])
+            },
+            uTextureSize: {
+                value: {
+                    x: 1080,
+                    y: 1080
+                }
+            },
+            uMeshSize: {
+                value: {
+                    x: window.innerWidth,
+                    y: window.innerHeight
+                }
+            },
+            uNoiseStrength: {
+                value: .5
+            },
+            uVignetteStrength: {
+                value: 1
+            },
+            uTime: {
+                value: 0
+            },
+            uMouse: {
+                value: {
+                    x: 0,
+                    y: 0
+                }
+            },
+            uMouseDiff: {
+                value: {
+                    x: 0,
+                    y: 0
+                }
+            }
+        },
+        this.mouse = null,
+        this.clickFrag = !1
+    }
+    init() {
+        this.clock = new h,
+        this.geometry = new c(1,1,32,32),
+        this.material = new w({
+            vertexShader: He,
+            fragmentShader: Ee,
+            transparent: !0,
+            uniforms: this.uniforms
+        }),
+        this.mesh = new u(this.geometry,this.material),
+        this.stage.scene.add(this.mesh),
+        this._setWindowSize(),
+        this._setMeshScale(),
+        this._setMeshPosition()
+    }
+    _debug() {
+        new L
+    }
+    _setWindowSize() {
+        this.windowWidth = window.innerWidth,
+        this.windowHeight = window.innerHeight,
+        this.windowWidthHalf = this.windowWidth * .5,
+        this.windowHeightHalf = this.windowHeight * .5
+    }
+    _setMeshScale() {
+        this.mesh.scale.set(this.windowWidth, this.windowHeight),
+        this.uniforms.uMeshSize.value = {
+            x: this.mesh.scale.x,
+            y: this.mesh.scale.y
+        },
+        this.meshWidthHalf = this.mesh.scale.x * .5,
+        this.meshHeightHalf = this.mesh.scale.y * .5
+    }
+    _setMeshPosition() {
+        this.mesh.position.x = -this.windowWidthHalf + this.meshWidthHalf,
+        this.mesh.position.y = this.windowHeightHalf - this.meshHeightHalf
+    }
+    onClick() {}
+    onMouseMove(e) {
+        this.mouse = e,
+        this.uniforms.uMouse.value = this.mouse
+    }
+    resize() {
+        this._setWindowSize(),
+        this._setMeshScale()
+    }
+    render(e, i) {
+        this.mesh && this._setMeshPosition();
+        const t = this.clock.getElapsedTime();
+        this.time = t,
+        this.uniforms.uMouse.value = e,
+        this.uniforms.uMouseDiff.value = i,
+        this.uniforms.uTime.value = this.time
+    }
+}
+class be {
+    constructor() {
+        this.stage = null,
+        this.mouse = {
+            x: 0,
+            y: 0
+        },
+        this.mouseEase = {
+            x: 0,
+            y: 0
+        },
+        this.mouseDiff = {
+            x: 0,
+            y: 0
+        }
+    }
+    init() {
+        this.stage = new Pe,
+        this.stage.init(),
+        this.mesh = new _e(this.stage),
+        this.mesh.init(),
+        this.onRaf(),
+        this.resize = this.resize.bind(this),
+        window.addEventListener("resize", this.resize),
+        this.onClick = this.onClick.bind(this),
+        window.addEventListener("click", this.onClick),
+        this.onMouseMove = this.onMouseMove.bind(this),
+        window.addEventListener("mousemove", this.onMouseMove)
+    }
+    render() {
+        this.mouseEase = {
+            x: T.lerp(this.mouseEase.x, this.mouse.x, .1),
+            y: T.lerp(this.mouseEase.y, this.mouse.y, .1)
+        },
+        this.mouseDiff = {
+            x: T.lerp(this.mouseDiff.x, this.mouseEase.x, .1),
+            y: T.lerp(this.mouseDiff.y, this.mouseEase.y, .1)
+        },
+        this.stage.render(),
+        this.mesh.render(this.mouseEase, this.mouseDiff)
+    }
+    resize() {
+        this.stage.resize(),
+        this.mesh.resize()
+    }
+    onClick() {
+        this.mesh.onClick()
+    }
+    onMouseMove(e) {
+        this.mouse = {
+            x: e.clientX / window.innerWidth,
+            y: -(e.clientY / window.innerHeight) * 2 + 1
+        },
+        this.mesh.onMouseMove(this.mouse)
+    }
+    onRaf() {
+        this.render(),
+        requestAnimationFrame(this.onRaf.bind(this))
+    }
+}
+class p {
+    static loadResource(e) {
+        return new Promise((i,t)=>{
+            fetch(e).then(s=>s.text()).then(s=>{
+                i(s)
+            }
+            ).catch(s=>{
+                t(s)
+            }
+            )
+        }
+        )
+    }
+    static lerp(e, i, t) {
+        return (1 - t) * e + t * i
+    }
+}
+class Ce {
+    constructor() {
+        this.rendererParam = {
+            clearColor: 15724527,
+            width: window.innerWidth,
+            height: window.innerHeight
+        },
+        this.cameraParam = {
+            fov: 60,
+            near: .1,
+            far: 10,
+            lookAt: new g(0,0,0),
+            x: 0,
+            y: 0,
+            z: 1
+        },
+        this.scene = null,
+        this.camera = null,
+        this.renderer = null,
+        this.light = null,
+        this.controls = null,
+        this.webglElement = null,
+        this.isInitialized = !1
+    }
+    init() {
+        this._setScene(),
+        this._setRenderer(),
+        this._setCamera(),
+        this.isInitialized = !0
+    }
+    _setScene() {
+        this.scene = new o
+    }
+    _setRenderer() {
+        this.renderer = new a({
+            alpha: !1,
+            antialias: !0
+        }),
+        this.renderer.setSize(this.rendererParam.width, this.rendererParam.height),
+        this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio)),
+        this.webglElement = document.querySelector("#container"),
+        this.webglElement.appendChild(this.renderer.domElement)
+    }
+    _setCamera() {
+        this.isInitialized || (this.camera = new l(0,0,this.cameraParam.near,this.cameraParam.far),
+        this.camera.position.set(this.cameraParam.x, this.cameraParam.y, this.cameraParam.z),
+        this.camera.lookAt(this.cameraParam.lookAt));
+        const e = window.innerWidth
+          , i = window.innerHeight;
+        this.camera.aspect = e / i,
+        this.camera.fov = v.radToDeg(Math.atan(e / this.camera.aspect / (2 * this.camera.position.z))) * 2,
+        this.camera.updateProjectionMatrix(),
+        this.renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+    render() {
+        this.renderer.render(this.scene, this.camera)
+    }
+    resize() {
+        this._setCamera()
+    }
+}
+var We = `varying vec2 vUv;
+uniform float uTime;
+uniform float uScrollDiff;
+
+varying float vScrollDiff;
+
+const float PI = 3.1415926535897932384626433832795;
+
+void main(){
+    vUv = uv;
+    vScrollDiff = uScrollDiff;
+    vec3 pos = position;
+
+    vec2 uvCurve = uv;
+    vec3 curve = vec3(
+        pos.x * - abs(uScrollDiff * .8),
+        pos.y * - abs(uScrollDiff * 0.2),
+        0.0
+    );
+    pos += curve * .01;
+
+    vec4 modelPosition = modelMatrix * vec4(pos,1.0);
+    vec4 viewPosition = viewMatrix * modelPosition;
+    vec4 projectedPosition = projectionMatrix * viewPosition;
+
+    gl_Position = projectedPosition;
+}`
+  , De = `varying vec2 vUv;
+varying float vScrollDiff;
+
+uniform float uTime;
+uniform float uNoiseStrength;
+uniform float uVignetteStrength;
+
+uniform vec2 uMouse;
+uniform vec2 uMouseDiff;
+uniform vec2 uMeshSize;
+uniform vec2 uTextureSize;
+
+uniform sampler2D uTexture1;
+
+
+
+void main(){
+    vec2 uvTexture = vUv;
+
+    vec2 resolutionRatio = vec2(
+       min((uMeshSize.x / uMeshSize.y) / (uTextureSize.x / uTextureSize.y), 1.0),
+       min((uMeshSize.y / uMeshSize.x) / (uTextureSize.y / uTextureSize.x), 1.0)
+    );
+    uvTexture -= .5;
+    uvTexture *= resolutionRatio;
+    uvTexture += .5;
+
+    vec4 defaultColor = texture2D(uTexture1,uvTexture);
+    vec4 redColor = texture2D(uTexture1,uvTexture+vec2(0.0,.001 * vScrollDiff));
+    vec4 blueColor = texture2D(uTexture1,uvTexture+vec2(0.0,.003 * vScrollDiff));
+
+    gl_FragColor = vec4(redColor.r,defaultColor.g,blueColor.b,defaultColor.a);
+}`;
+class ke {
+    constructor(e, i) {
+        this.stage = e,
+        this.item = i,
+        this.clock = null,
+        this.time = 0,
+        this.geometry = null,
+        this.material = null,
+        this.mesh = null,
+        this.windowWidth = 0,
+        this.windowHeight = 0,
+        this.windowWidthHalf = 0,
+        this.windowHeightHalf = 0,
+        this.meshWidthHalf = 0,
+        this.meshHeightHalf = 0,
+        this.uniforms = {
+            uTexture1: {
+                value: new r().load(i.imgSrc1)
+            },
+            uTexture2: {
+                value: new r().load(i.imgSrc2)
+            },
+            uTextureSize: {
+                value: {
+                    x: i.imgWidth,
+                    y: i.imgHeight
+                }
+            },
+            uMeshSize: {
+                value: {
+                    x: window.innerWidth,
+                    y: window.innerHeight
+                }
+            },
+            uTime: {
+                value: 0
+            },
+            uMouse: {
+                value: {
+                    x: 0,
+                    y: 0
+                }
+            },
+            uMouseDiff: {
+                value: {
+                    x: 0,
+                    y: 0
+                }
+            },
+            uScrollDiff: {
+                value: 0
+            }
+        },
+        this.mouse = null,
+        this.clickFrag = !1
+    }
+    init() {
+        this.clock = new h,
+        this.geometry = new c(1,1,32,32),
+        this.material = new w({
+            vertexShader: We,
+            fragmentShader: De,
+            transparent: !0,
+            uniforms: this.uniforms
+        }),
+        this.mesh = new u(this.geometry,this.material),
+        this.stage.scene.add(this.mesh),
+        this._setWindowSize(),
+        this._setMeshScale(),
+        this._setMeshPosition()
+    }
+    _setWindowSize() {
+        this.windowWidth = window.innerWidth,
+        this.windowHeight = window.innerHeight,
+        this.windowWidthHalf = this.windowWidth * .5,
+        this.windowHeightHalf = this.windowHeight * .5
+    }
+    _setMeshScale() {
+        this.mesh.scale.set(this.item.width, this.item.height),
+        this.uniforms.uMeshSize.value = {
+            x: this.mesh.scale.x,
+            y: this.mesh.scale.y
+        },
+        this.meshWidthHalf = this.mesh.scale.x * .5,
+        this.meshHeightHalf = this.mesh.scale.y * .5
+    }
+    _setMeshPosition(e) {
+        this.mesh.position.x = -this.windowWidthHalf + this.meshWidthHalf + this.item.left,
+        this.mesh.position.y = this.windowHeightHalf - this.meshHeightHalf - this.item.top + e
+    }
+    onClick() {}
+    onMouseMove(e) {
+        this.mouse = e,
+        this.uniforms.uMouse.value = this.mouse
+    }
+    resize() {
+        this._setWindowSize(),
+        this._setMeshScale()
+    }
+    render(e, i, t, s) {
+        this.mesh && this._setMeshPosition(t);
+        const m = this.clock.getElapsedTime();
+        this.time = m,
+        this.uniforms.uScrollDiff.value = s,
+        this.uniforms.uMouse.value = e,
+        this.uniforms.uMouseDiff.value = i,
+        this.uniforms.uTime.value = this.time
+    }
+}
+class Re {
+    constructor() {
+        this.stage = null,
+        this.glElementsDOM = null,
+        this.glElementsOptionList = [],
+        this.meshList = [],
+        this.mouse = {
+            x: 0,
+            y: 0
+        },
+        this.mouseEase = {
+            x: 0,
+            y: 0
+        },
+        this.mouseDiff = {
+            x: 0,
+            y: 0
+        },
+        this.scrollTop = 0,
+        this.scrollTopPrev = 0,
+        this.scrollTopDiff = 0
+    }
+    init() {
+        this.stage = new Ce,
+        this.stage.init(),
+        this.getGlElements(),
+        this.glElementsOptionList.forEach((e,i)=>{
+            this.meshList[i] = new ke(this.stage,e),
+            this.meshList[i].init()
+        }
+        ),
+        this.onRaf(),
+        this.resize = this.resize.bind(this),
+        window.addEventListener("resize", this.resize),
+        this.onClick = this.onClick.bind(this),
+        window.addEventListener("click", this.onClick),
+        this.onMouseMove = this.onMouseMove.bind(this),
+        window.addEventListener("mousemove", this.onMouseMove)
+    }
+    getGlElements() {
+        this.glElementsDOM = [...document.querySelectorAll(".js-webgl")];
+        for (let e = 0; e < this.glElementsDOM.length; e++) {
+            this.glElementsOptionList[e] = {},
+            this.glElementsOptionList[e].imgSrc1 = this.glElementsDOM[e].dataset.img1,
+            this.glElementsOptionList[e].imgSrc2 = this.glElementsDOM[e].dataset.img2,
+            this.glElementsOptionList[e].imgWidth = this.glElementsDOM[e].getElementsByTagName("img")[0].naturalWidth,
+            this.glElementsOptionList[e].imgHeight = this.glElementsDOM[e].getElementsByTagName("img")[0].naturalHeight,
+            this.glElementsOptionList[e].$target = this.glElementsDOM[e],
+            this.glElementsOptionList[e].width = this.glElementsDOM[e].getBoundingClientRect().width,
+            this.glElementsOptionList[e].height = this.glElementsDOM[e].getBoundingClientRect().height;
+            const i = this.glElementsDOM[e].getBoundingClientRect()
+              , t = window.pageYOffset || document.documentElement.scrollTop
+              , s = window.pageXOffset || document.documentElement.scrollLeft;
+            this.glElementsOptionList[e].top = i.top + t,
+            this.glElementsOptionList[e].left = i.left + s
+        }
+    }
+    render() {
+        this.mouseEase = {
+            x: p.lerp(this.mouseEase.x, this.mouse.x, .1),
+            y: p.lerp(this.mouseEase.y, this.mouse.y, .1)
+        },
+        this.mouseDiff = {
+            x: p.lerp(this.mouseDiff.x, this.mouse.x - this.mouseEase.x, .1),
+            y: p.lerp(this.mouseDiff.y, this.mouse.y - this.mouseEase.y, .1)
+        },
+        this.scrollTop = document.documentElement.scrollTop || document.body.scrollTop,
+        this.scrollTopDiff = p.lerp(this.scrollTopDiff, this.scrollTop - this.scrollTopPrev, .1),
+        this.meshList.forEach(e=>{
+            e.render(this.mouseEase, this.mouseDiff, this.scrollTop, this.scrollTopDiff)
+        }
+        ),
+        this.scrollTopPrev = this.scrollTop,
+        this.stage.render()
+    }
+    resize() {
+        this.stage.resize();
+        for (let e = 0; e < this.glElementsDOM.length; e++) {
+            this.glElementsOptionList[e].width = this.glElementsDOM[e].getBoundingClientRect().width,
+            this.glElementsOptionList[e].height = this.glElementsDOM[e].getBoundingClientRect().height;
+            const i = this.glElementsDOM[e].getBoundingClientRect()
+              , t = window.pageYOffset || document.documentElement.scrollTop
+              , s = window.pageXOffset || document.documentElement.scrollLeft;
+            this.glElementsOptionList[e].top = i.top + t,
+            this.glElementsOptionList[e].left = i.left + s
+        }
+        this.meshList.forEach(e=>{
+            e.resize()
+        }
+        )
+    }
+    onClick() {
+        this.meshList.forEach(e=>{
+            e.onClick()
+        }
+        )
+    }
+    onMouseMove(e) {
+        this.mouse = {
+            x: e.clientX / window.innerWidth * 2 - 1,
+            y: -(e.clientY / window.innerHeight) * 2 + 1
+        },
+        this.meshList.forEach(i=>{
+            i.onMouseMove(this.mouse)
+        }
+        )
+    }
+    onRaf() {
+        this.render(),
+        requestAnimationFrame(this.onRaf.bind(this))
+    }
+}
+class P {
+    static loadResource(e) {
+        return new Promise((i,t)=>{
+            fetch(e).then(s=>s.text()).then(s=>{
+                i(s)
+            }
+            ).catch(s=>{
+                t(s)
+            }
+            )
+        }
+        )
+    }
+    static lerp(e, i, t) {
+        return (1 - t) * e + t * i
+    }
+}
+class Le {
+    constructor() {
+        this.rendererParam = {
+            clearColor: 15724527,
+            width: window.innerWidth,
+            height: window.innerHeight
+        },
+        this.cameraParam = {
+            fov: 60,
+            near: .1,
+            far: 10,
+            lookAt: new g(0,0,0),
+            x: 0,
+            y: 0,
+            z: 1
+        },
+        this.scene = null,
+        this.camera = null,
+        this.renderer = null,
+        this.light = null,
+        this.controls = null,
+        this.webglElement = null,
+        this.isInitialized = !1
+    }
+    init() {
+        this._setScene(),
+        this._setRenderer(),
+        this._setCamera(),
+        this.isInitialized = !0
+    }
+    _setScene() {
+        this.scene = new o
+    }
+    _setRenderer() {
+        this.renderer = new a({
+            alpha: !1,
+            antialias: !0
+        }),
+        this.renderer.setSize(this.rendererParam.width, this.rendererParam.height),
+        this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio)),
+        this.webglElement = document.querySelector("#container"),
+        this.webglElement.appendChild(this.renderer.domElement)
+    }
+    _setCamera() {
+        this.isInitialized || (this.camera = new l(0,0,this.cameraParam.near,this.cameraParam.far),
+        this.camera.position.set(this.cameraParam.x, this.cameraParam.y, this.cameraParam.z),
+        this.camera.lookAt(this.cameraParam.lookAt));
+        const e = window.innerWidth
+          , i = window.innerHeight;
+        this.camera.aspect = e / i,
+        this.camera.fov = v.radToDeg(Math.atan(e / this.camera.aspect / (2 * this.camera.position.z))) * 2,
+        this.camera.updateProjectionMatrix(),
+        this.renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+    render() {
+        this.renderer.render(this.scene, this.camera)
+    }
+    resize() {
+        this._setCamera()
+    }
+}
+var Oe = `varying vec2 vUv;
+uniform float uTime;
+
+void main(){
+    vUv = uv;
+    vec4 modelPosition = modelMatrix * vec4(position,1.0);
+
+    vec4 viewPosition = viewMatrix * modelPosition;
+    vec4 projectedPosition = projectionMatrix * viewPosition;
+
+    gl_Position = projectedPosition;
+}`
+  , Ae = `varying vec2 vUv;
+
+uniform float uTime;
+
+uniform vec2 uMouse;
+uniform vec2 uMouseDiff;
+uniform vec2 uMeshSize;
+
+float lightStrength = .2;
+
+void main(){
+
+    vec2 uvCircle = vUv * 2.0 - 1.0;
+    uvCircle -= uMouse;
+    vec2 uvCricleResolutionRatio = vec2(
+        min((uMeshSize.y / uMeshSize.x), 1.),
+        min((uMeshSize.x / uMeshSize.y), 1.)
+    );
+    uvCircle /= uvCricleResolutionRatio;
+    float circle = (1.0 - length(uvCircle));
+
+    // 1,lightStrength set
+    circle *= lightStrength;
+
+    // 2,option set
+    // circle /= vUv.x * 2.0 - 1.0;
+    // circle /= vUv.y * 2.0 - 1.0;
+
+    vec3 finalColor = vec3(
+        vUv.x,
+        vUv.y,
+        1.0
+    );
+    finalColor *= circle;
+    
+    gl_FragColor = vec4(vec3(finalColor), 1.0);
+
+}`;
+class Ue {
+    constructor(e) {
+        this.stage = e,
+        this.clock = null,
+        this.time = 0,
+        this.geometry = null,
+        this.material = null,
+        this.mesh = null,
+        this.windowWidth = 0,
+        this.windowHeight = 0,
+        this.windowWidthHalf = 0,
+        this.windowHeightHalf = 0,
+        this.meshWidthHalf = 0,
+        this.meshHeightHalf = 0,
+        this.uniforms = {
+            uMeshSize: {
+                value: {
+                    x: window.innerWidth,
+                    y: window.innerHeight
+                }
+            },
+            uTime: {
+                value: 0
+            },
+            uMouse: {
+                value: {
+                    x: 0,
+                    y: 0
+                }
+            },
+            uMouseDiff: {
+                value: {
+                    x: 0,
+                    y: 0
+                }
+            }
+        },
+        this.mouse = null,
+        this.clickFrag = !1
+    }
+    init() {
+        this.clock = new h,
+        this.geometry = new c(1,1,32,32),
+        this.material = new w({
+            vertexShader: Oe,
+            fragmentShader: Ae,
+            transparent: !0,
+            uniforms: this.uniforms
+        }),
+        this.mesh = new u(this.geometry,this.material),
+        this.stage.scene.add(this.mesh),
+        this._setWindowSize(),
+        this._setMeshScale(),
+        this._setMeshPosition()
+    }
+    _debug() {
+        new L
+    }
+    _setWindowSize() {
+        this.windowWidth = window.innerWidth,
+        this.windowHeight = window.innerHeight,
+        this.windowWidthHalf = this.windowWidth * .5,
+        this.windowHeightHalf = this.windowHeight * .5
+    }
+    _setMeshScale() {
+        this.mesh.scale.set(this.windowWidth, this.windowHeight),
+        this.uniforms.uMeshSize.value = {
+            x: this.mesh.scale.x,
+            y: this.mesh.scale.y
+        },
+        this.meshWidthHalf = this.mesh.scale.x * .5,
+        this.meshHeightHalf = this.mesh.scale.y * .5
+    }
+    _setMeshPosition() {
+        this.mesh.position.x = -this.windowWidthHalf + this.meshWidthHalf,
+        this.mesh.position.y = this.windowHeightHalf - this.meshHeightHalf
+    }
+    onClick() {}
+    resize() {
+        this._setWindowSize(),
+        this._setMeshScale()
+    }
+    render(e, i) {
+        this.mesh && this._setMeshPosition();
+        const t = this.clock.getElapsedTime();
+        this.time = t,
+        this.uniforms.uMouse.value = e,
+        this.uniforms.uMouseDiff.value = i,
+        this.uniforms.uTime.value = this.time
+    }
+}
+class Ie {
+    constructor() {
+        this.stage = null,
+        this.mouse = {
+            x: 0,
+            y: 0
+        },
+        this.mouseEase = {
+            x: 0,
+            y: 0
+        },
+        this.mouseDiff = {
+            x: 0,
+            y: 0
+        }
+    }
+    init() {
+        this.stage = new Le,
+        this.stage.init(),
+        this.mesh = new Ue(this.stage),
+        this.mesh.init(),
+        this.onRaf(),
+        this.resize = this.resize.bind(this),
+        window.addEventListener("resize", this.resize),
+        this.onClick = this.onClick.bind(this),
+        window.addEventListener("click", this.onClick),
+        this.onMouseMove = this.onMouseMove.bind(this),
+        window.addEventListener("mousemove", this.onMouseMove)
+    }
+    render() {
+        this.mouseEase = {
+            x: P.lerp(this.mouseEase.x, this.mouse.x, .1),
+            y: P.lerp(this.mouseEase.y, this.mouse.y, .1)
+        },
+        this.mouseDiff = {
+            x: P.lerp(this.mouseDiff.x, this.mouse.x - this.mouseEase.x, .1),
+            y: P.lerp(this.mouseDiff.y, this.mouse.y - this.mouseEase.y, .1)
+        },
+        this.stage.render(),
+        this.mesh.render(this.mouseEase, this.mouseDiff)
+    }
+    resize() {
+        this.stage.resize(),
+        this.mesh.resize()
+    }
+    onClick() {
+        this.mesh.onClick()
+    }
+    onMouseMove(e) {
+        this.mouse = {
+            x: e.clientX / window.innerWidth * 2 - 1,
+            y: -(e.clientY / window.innerHeight) * 2 + 1
+        }
+    }
+    onRaf() {
+        this.render(),
+        requestAnimationFrame(this.onRaf.bind(this))
+    }
+}
+class S {
+    static loadResource(e) {
+        return new Promise((i,t)=>{
+            fetch(e).then(s=>s.text()).then(s=>{
+                i(s)
+            }
+            ).catch(s=>{
+                t(s)
+            }
+            )
+        }
+        )
+    }
+    static lerp(e, i, t) {
+        return (1 - t) * e + t * i
+    }
+}
+class je {
+    constructor() {
+        this.rendererParam = {
+            clearColor: 15724527,
+            width: window.innerWidth,
+            height: window.innerHeight
+        },
+        this.cameraParam = {
+            fov: 60,
+            near: .1,
+            far: 10,
+            lookAt: new g(0,0,0),
+            x: 0,
+            y: 0,
+            z: 1
+        },
+        this.scene = null,
+        this.camera = null,
+        this.renderer = null,
+        this.light = null,
+        this.controls = null,
+        this.webglElement = null,
+        this.isInitialized = !1
+    }
+    init() {
+        this._setScene(),
+        this._setRenderer(),
+        this._setCamera(),
+        this.isInitialized = !0
+    }
+    _setScene() {
+        this.scene = new o
+    }
+    _setRenderer() {
+        this.renderer = new a({
+            alpha: !0,
+            antialias: !0
+        }),
+        this.renderer.setSize(this.rendererParam.width, this.rendererParam.height),
+        this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio)),
+        this.webglElement = document.querySelector("#container"),
+        this.webglElement.appendChild(this.renderer.domElement)
+    }
+    _setCamera() {
+        this.isInitialized || (this.camera = new l(0,0,this.cameraParam.near,this.cameraParam.far),
+        this.camera.position.set(this.cameraParam.x, this.cameraParam.y, this.cameraParam.z),
+        this.camera.lookAt(this.cameraParam.lookAt));
+        const e = window.innerWidth
+          , i = window.innerHeight;
+        this.camera.aspect = e / i,
+        this.camera.fov = v.radToDeg(Math.atan(e / this.camera.aspect / (2 * this.camera.position.z))) * 2,
+        this.camera.updateProjectionMatrix(),
+        this.renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+    render() {
+        this.renderer.render(this.scene, this.camera)
+    }
+    resize() {
+        this._setCamera()
+    }
+}
+var Fe = `varying vec2 vUv;
+uniform float uTime;
+uniform vec2 uMouseDiff;
+uniform float uClickValue;
+const float PI = 3.1415926535897932384626433832795;
+
+void main(){
+    vUv = uv;
+    vec3 pos = position;
+
+    vec2 uvCurve = uv;
+
+    vec3 wavedUv = vec3(
+        vUv.x,
+        vUv.y + sin(vUv.x * 30.0) * .1,
+        0.0
+    );
+
+    vec3 curve = vec3(
+       - sin(uvCurve.y * PI) * uMouseDiff.x,
+       - sin(uvCurve.x * PI) * uMouseDiff.y,
+        0.0
+    );
+    pos += curve * .5;
+
+    float angle = atan(vUv.x - 0.5, vUv.y - 0.5) / (PI * 2.0) + 0.5;
+    float radius = 0.25 + sin(angle * sin(uTime)) * 0.02;
+    float strength = 1.0 - step(uClickValue, distance(vUv, vec2(.5)) - radius);
+
+    pos *= strength;
+
+    vec4 modelPosition = modelMatrix * vec4(pos,1.0);
+    vec4 viewPosition = viewMatrix * modelPosition;
+    vec4 projectedPosition = projectionMatrix * viewPosition;
+
+    gl_Position = projectedPosition;
+}`
+  , $e = `varying vec2 vUv;
+
+uniform float uTime;
+uniform float uScale;
+uniform float uNoiseStrength;
+uniform float uVignetteStrength;
+
+uniform vec2 uMouse;
+uniform vec2 uMouseDiff;
+
+uniform vec2 uMeshSize;
+uniform vec2 uTextureSize;
+
+
+
+uniform sampler2D uTexture1;
+
+
+
+void main(){
+    vec2 uvTexture = vUv;
+
+    vec2 resolutionRatio = vec2(
+       min((uMeshSize.x / uMeshSize.y) / (uTextureSize.x / uTextureSize.y), 1.0),
+       min((uMeshSize.y / uMeshSize.x) / (uTextureSize.y / uTextureSize.x), 1.0)
+    );
+    uvTexture -= .5;
+    uvTexture *= resolutionRatio;
+    uvTexture += .5;
+
+    uvTexture += uMouseDiff * .65;
+
+    float strength = mod(uvTexture.y * 10.0, 1.0);
+    strength = step(.89, strength);
+
+    uvTexture += uNoiseStrength * strength;
+
+
+    vec4 textureColor = texture2D(uTexture1,uvTexture);
+
+    vec4 finalColor = textureColor * uScale;
+
+    gl_FragColor = finalColor;
+}`;
+class qe {
+    constructor(e, i) {
+        this.stage = e,
+        this.item = i,
+        this.clock = null,
+        this.time = 0,
+        this.geometry = null,
+        this.material = null,
+        this.mesh = null,
+        this.windowWidth = 0,
+        this.windowHeight = 0,
+        this.windowWidthHalf = 0,
+        this.windowHeightHalf = 0,
+        this.meshWidthHalf = 0,
+        this.meshHeightHalf = 0,
+        this.uniforms = {
+            uTexture1: {
+                value: new r().load(i.imgSrc)
+            },
+            uTextureSize: {
+                value: {
+                    x: i.imgWidth,
+                    y: i.imgHeight
+                }
+            },
+            uMeshSize: {
+                value: {
+                    x: window.innerWidth,
+                    y: window.innerHeight
+                }
+            },
+            uTime: {
+                value: 0
+            },
+            uMouse: {
+                value: {
+                    x: 0,
+                    y: 0
+                }
+            },
+            uScale: {
+                value: 0
+            },
+            uNoiseStrength: {
+                value: 0
+            },
+            uClickValue: {
+                value: .2
+            },
+            uMouseDiff: {
+                value: {
+                    x: 0,
+                    y: 0
+                }
+            },
+            uScrollDiff: {
+                value: 0
+            }
+        },
+        this.mouse = null,
+        this.clickFrag = !1
+    }
+    init() {
+        this.clock = new h,
+        this.geometry = new c(1,1,32,32),
+        this.material = new w({
+            vertexShader: Fe,
+            fragmentShader: $e,
+            transparent: !0,
+            uniforms: this.uniforms
+        }),
+        this.mesh = new u(this.geometry,this.material),
+        this.stage.scene.add(this.mesh),
+        this._setWindowSize(),
+        this._setMeshScale(),
+        this._setMeshPosition()
+    }
+    _setWindowSize() {
+        this.windowWidth = window.innerWidth,
+        this.windowHeight = window.innerHeight,
+        this.windowWidthHalf = this.windowWidth * .5,
+        this.windowHeightHalf = this.windowHeight * .5
+    }
+    _setMeshScale() {
+        this.mesh.scale.set(this.item.width, this.item.height),
+        this.uniforms.uMeshSize.value = {
+            x: this.mesh.scale.x,
+            y: this.mesh.scale.y
+        },
+        this.meshWidthHalf = this.mesh.scale.x * .5,
+        this.meshHeightHalf = this.mesh.scale.y * .5
+    }
+    _setMeshPosition() {
+        this.mesh.position.y = 100,
+        this.mesh.position.x = 200
+    }
+    onMouseEnter() {
+        this.stage.scene.children.forEach(e=>{
+            d.to(e.material.uniforms.uScale, {
+                duration: .3,
+                value: 0,
+                ease: f.easeOut
+            })
+        }
+        ),
+        d.to(this.uniforms.uScale, {
+            duration: .3,
+            value: 1,
+            ease: f.easeOut
+        }),
+        d.set(this.uniforms.uNoiseStrength, {
+            value: 1
+        }),
+        d.to(this.uniforms.uNoiseStrength, {
+            duration: .3,
+            value: 0
+        })
+    }
+    onClick() {
+        d.to(this.uniforms.uClickValue, {
+            duration: .6,
+            value: 1,
+            ease: f.easeIn
+        })
+    }
+    onMouseMove(e) {
+        this.mouse = e,
+        this.uniforms.uMouse.value = this.mouse,
+        d.to(this.mesh.position, {
+            duration: .3,
+            x: this.mouse.x * this.windowWidthHalf + 300,
+            y: this.mouse.y * this.windowHeightHalf,
+            delay: .03
+        })
+    }
+    resize() {
+        this._setWindowSize()
+    }
+    render(e, i, t, s) {
+        const m = this.clock.getElapsedTime();
+        this.time = m,
+        this.uniforms.uScrollDiff.value = s,
+        this.uniforms.uMouse.value = e,
+        this.uniforms.uMouseDiff.value = i,
+        this.uniforms.uTime.value = this.time
+    }
+}
+class Ne {
+    constructor() {
+        this.stage = null,
+        this.glElementsDOM = null,
+        this.glElementsOptionList = [],
+        this.meshList = [],
+        this.mouse = {
+            x: 0,
+            y: 0
+        },
+        this.mouseEase = {
+            x: 0,
+            y: 0
+        },
+        this.mouseDiff = {
+            x: 0,
+            y: 0
+        },
+        this.scrollTop = 0,
+        this.scrollTopPrev = 0,
+        this.scrollTopDiff = 0
+    }
+    init() {
+        this.stage = new je,
+        this.stage.init(),
+        this.getGlElements(),
+        this.glElementsOptionList.forEach((e,i)=>{
+            this.meshList[i] = new qe(this.stage,e),
+            this.meshList[i].init(),
+            this.meshList[i].onMouseEnter = this.meshList[i].onMouseEnter.bind(this.meshList[i]),
+            e.$target.addEventListener("mouseenter", this.meshList[i].onMouseEnter)
+        }
+        ),
+        this.onRaf(),
+        this.resize = this.resize.bind(this),
+        window.addEventListener("resize", this.resize),
+        this.onClick = this.onClick.bind(this),
+        window.addEventListener("click", this.onClick),
+        this.onMouseMove = this.onMouseMove.bind(this),
+        window.addEventListener("mousemove", this.onMouseMove)
+    }
+    getGlElements() {
+        this.glElementsDOM = [...document.querySelectorAll(".js-webgl")];
+        for (let e = 0; e < this.glElementsDOM.length; e++) {
+            this.glElementsOptionList[e] = {},
+            this.glElementsOptionList[e].imgSrc = this.glElementsDOM[e].dataset.img1,
+            this.glElementsOptionList[e].imgWidth = 1080,
+            this.glElementsOptionList[e].imgHeight = 1080,
+            this.glElementsOptionList[e].$target = this.glElementsDOM[e],
+            this.glElementsOptionList[e].width = 600,
+            this.glElementsOptionList[e].height = 440;
+            const i = this.glElementsDOM[e].getBoundingClientRect()
+              , t = window.pageYOffset || document.documentElement.scrollTop
+              , s = window.pageXOffset || document.documentElement.scrollLeft;
+            this.glElementsOptionList[e].top = i.top + t,
+            this.glElementsOptionList[e].left = i.left + s
+        }
+    }
+    render() {
+        this.mouseEase = {
+            x: S.lerp(this.mouseEase.x, this.mouse.x, .1),
+            y: S.lerp(this.mouseEase.y, this.mouse.y, .1)
+        },
+        this.mouseDiff = {
+            x: S.lerp(this.mouseDiff.x, this.mouse.x - this.mouseEase.x, .1),
+            y: S.lerp(this.mouseDiff.y, this.mouse.y - this.mouseEase.y, .1)
+        },
+        this.scrollTop = document.documentElement.scrollTop || document.body.scrollTop,
+        this.scrollTopDiff = S.lerp(this.scrollTopDiff, this.scrollTop - this.scrollTopPrev, .1),
+        this.meshList.forEach(e=>{
+            e.render(this.mouseEase, this.mouseDiff, this.scrollTop, this.scrollTopDiff)
+        }
+        ),
+        this.scrollTopPrev = this.scrollTop,
+        this.stage.render()
+    }
+    resize() {
+        this.stage.resize();
+        for (let e = 0; e < this.glElementsDOM.length; e++) {
+            this.glElementsOptionList[e].width = this.glElementsDOM[e].getBoundingClientRect().width,
+            this.glElementsOptionList[e].height = this.glElementsDOM[e].getBoundingClientRect().height;
+            const i = this.glElementsDOM[e].getBoundingClientRect()
+              , t = window.pageYOffset || document.documentElement.scrollTop
+              , s = window.pageXOffset || document.documentElement.scrollLeft;
+            this.glElementsOptionList[e].top = i.top + t,
+            this.glElementsOptionList[e].left = i.left + s
+        }
+        this.meshList.forEach(e=>{
+            e.resize()
+        }
+        )
+    }
+    onClick() {
+        this.meshList.forEach(e=>{
+            e.onClick()
+        }
+        )
+    }
+    onMouseMove(e) {
+        this.mouse = {
+            x: e.clientX / window.innerWidth * 2 - 1,
+            y: -(e.clientY / window.innerHeight) * 2 + 1
+        },
+        this.meshList.forEach(i=>{
+            i.onMouseMove(this.mouse)
+        }
+        )
+    }
+    onRaf() {
+        this.render(),
+        requestAnimationFrame(this.onRaf.bind(this))
+    }
+}
+class H {
+    static loadResource(e) {
+        return new Promise((i,t)=>{
+            fetch(e).then(s=>s.text()).then(s=>{
+                i(s)
+            }
+            ).catch(s=>{
+                t(s)
+            }
+            )
+        }
+        )
+    }
+    static lerp(e, i, t) {
+        return (1 - t) * e + t * i
+    }
+}
+class Ye {
+    constructor() {
+        this.rendererParam = {
+            clearColor: 15724527,
+            width: window.innerWidth,
+            height: window.innerHeight
+        },
+        this.cameraParam = {
+            fov: 60,
+            near: .1,
+            far: 10,
+            lookAt: new g(0,0,0),
+            x: 0,
+            y: 0,
+            z: 1
+        },
+        this.scene = null,
+        this.camera = null,
+        this.renderer = null,
+        this.light = null,
+        this.controls = null,
+        this.webglElement = null,
+        this.isInitialized = !1
+    }
+    init() {
+        this._setScene(),
+        this._setRenderer(),
+        this._setCamera(),
+        this.isInitialized = !0
+    }
+    _setScene() {
+        this.scene = new o
+    }
+    _setRenderer() {
+        this.renderer = new a({
+            alpha: !1,
+            antialias: !0
+        }),
+        this.renderer.setSize(this.rendererParam.width, this.rendererParam.height),
+        this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio)),
+        this.webglElement = document.querySelector("#container"),
+        this.webglElement.appendChild(this.renderer.domElement)
+    }
+    _setCamera() {
+        this.isInitialized || (this.camera = new l(0,0,this.cameraParam.near,this.cameraParam.far),
+        this.camera.position.set(this.cameraParam.x, this.cameraParam.y, this.cameraParam.z),
+        this.camera.lookAt(this.cameraParam.lookAt));
+        const e = window.innerWidth
+          , i = window.innerHeight;
+        this.camera.aspect = e / i,
+        this.camera.fov = v.radToDeg(Math.atan(e / this.camera.aspect / (2 * this.camera.position.z))) * 2,
+        this.camera.updateProjectionMatrix(),
+        this.renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+    render() {
+        this.renderer.render(this.scene, this.camera)
+    }
+    resize() {
+        this._setCamera()
+    }
+}
+var Ve = `varying vec2 vUv;
+uniform float uTime;
+
+void main(){
+    vUv = uv;
+    vec4 modelPosition = modelMatrix * vec4(position,1.0);
+
+
+    vec4 viewPosition = viewMatrix * modelPosition;
+    vec4 projectedPosition = projectionMatrix * viewPosition;
+
+    gl_Position = projectedPosition;
+}`
+  , Be = `varying vec2 vUv;
+
+uniform float uTime;
+uniform vec2 uMouse;
+uniform vec2 uMouseDiff;
+uniform vec2 uMeshSize;
+uniform vec2 uTextureSize;
+uniform sampler2D uTexture;
+
+float barrelStrength = .5;
+float uvScale = 3.0;
+
+void main(){
+    vec2 uvTexture = vUv;
+
+    vec2 resolutionRatio = vec2(
+       min((uMeshSize.x / uMeshSize.y) / (uTextureSize.x / uTextureSize.y), 1.0),
+       min((uMeshSize.y / uMeshSize.x) / (uTextureSize.y / uTextureSize.x), 1.0)
+    );
+    uvTexture -= .5;
+    uvTexture *= resolutionRatio;
+    uvTexture += .5;
+
+    vec2 uvCircle = vUv * 2.0 - 1.0;
+    uvCircle -= uMouse;
+    vec2 uvCricleResolutionRatio = vec2(
+        min((uMeshSize.y / uMeshSize.x), 1.),
+        min((uMeshSize.x / uMeshSize.y), 1.)
+    );
+    uvCircle /= uvCricleResolutionRatio;
+    float circle = length(uvCircle);
+
+    float barrel = max(1.0 - circle * uvScale, 0.0) * barrelStrength;
+    vec2 barrelUv = uvTexture - uvCircle * barrel;
+
+    vec4 finalColor = texture2D(uTexture, barrelUv);
+
+    gl_FragColor = finalColor;
+
+}`;
+class Ge {
+    constructor(e) {
+        this.stage = e,
+        this.clock = null,
+        this.time = 0,
+        this.geometry = null,
+        this.material = null,
+        this.mesh = null,
+        this.windowWidth = 0,
+        this.windowHeight = 0,
+        this.windowWidthHalf = 0,
+        this.windowHeightHalf = 0,
+        this.meshWidthHalf = 0,
+        this.meshHeightHalf = 0,
+        this.uniforms = {
+            uTexture: {
+                value: new r().load("/image1.png")
+            },
+            uTextureSize: {
+                value: {
+                    x: 1080,
+                    y: 1080
+                }
+            },
+            uMeshSize: {
+                value: {
+                    x: window.innerWidth,
+                    y: window.innerHeight
+                }
+            },
+            uTime: {
+                value: 0
+            },
+            uMouse: {
+                value: {
+                    x: 0,
+                    y: 0
+                }
+            },
+            uMouseDiff: {
+                value: {
+                    x: 0,
+                    y: 0
+                }
+            }
+        }
+    }
+    init() {
+        this.clock = new h,
+        this.geometry = new c(1,1,32,32),
+        this.material = new w({
+            vertexShader: Ve,
+            fragmentShader: Be,
+            transparent: !0,
+            uniforms: this.uniforms
+        }),
+        this.mesh = new u(this.geometry,this.material),
+        this.stage.scene.add(this.mesh),
+        this._setWindowSize(),
+        this._setMeshScale(),
+        this._setMeshPosition()
+    }
+    _setWindowSize() {
+        this.windowWidth = window.innerWidth,
+        this.windowHeight = window.innerHeight,
+        this.windowWidthHalf = this.windowWidth * .5,
+        this.windowHeightHalf = this.windowHeight * .5
+    }
+    _setMeshScale() {
+        this.mesh.scale.set(this.windowWidth, this.windowHeight),
+        this.uniforms.uMeshSize.value = {
+            x: this.mesh.scale.x,
+            y: this.mesh.scale.y
+        },
+        this.meshWidthHalf = this.mesh.scale.x * .5,
+        this.meshHeightHalf = this.mesh.scale.y * .5
+    }
+    _setMeshPosition() {
+        this.mesh.position.x = -this.windowWidthHalf + this.meshWidthHalf,
+        this.mesh.position.y = this.windowHeightHalf - this.meshHeightHalf
+    }
+    resize() {
+        this._setWindowSize(),
+        this._setMeshScale()
+    }
+    render(e, i) {
+        this.mesh && this._setMeshPosition();
+        const t = this.clock.getElapsedTime();
+        this.time = t,
+        this.uniforms.uMouse.value = e,
+        this.uniforms.uMouseDiff.value = i,
+        this.uniforms.uTime.value = this.time
+    }
+}
+class Xe {
+    constructor() {
+        this.stage = null,
+        this.mouse = {
+            x: 0,
+            y: 0
+        },
+        this.mouseEase = {
+            x: 0,
+            y: 0
+        },
+        this.mouseDiff = {
+            x: 0,
+            y: 0
+        }
+    }
+    init() {
+        this.stage = new Ye,
+        this.stage.init(),
+        this.mesh = new Ge(this.stage),
+        this.mesh.init(),
+        this.onRaf(),
+        this.resize = this.resize.bind(this),
+        window.addEventListener("resize", this.resize),
+        this.onMouseMove = this.onMouseMove.bind(this),
+        window.addEventListener("mousemove", this.onMouseMove)
+    }
+    onMouseMove(e) {
+        this.mouse = {
+            x: e.clientX / window.innerWidth * 2 - 1,
+            y: -(e.clientY / window.innerHeight) * 2 + 1
+        }
+    }
+    render() {
+        this.mouseEase = {
+            x: H.lerp(this.mouseEase.x, this.mouse.x, .1),
+            y: H.lerp(this.mouseEase.y, this.mouse.y, .1)
+        },
+        this.mouseDiff = {
+            x: H.lerp(this.mouseDiff.x, this.mouse.x - this.mouseEase.x, .1),
+            y: H.lerp(this.mouseDiff.y, this.mouse.y - this.mouseEase.y, .1)
+        },
+        this.stage.render(),
+        this.mesh.render(this.mouseEase, this.mouseDiff)
+    }
+    resize() {
+        this.stage.resize(),
+        this.mesh.resize()
+    }
+    onRaf() {
+        this.render(),
+        requestAnimationFrame(this.onRaf.bind(this))
+    }
+}
+class Ke {
+    constructor() {
+        this.rendererParam = {
+            clearColor: 15724527,
+            width: window.innerWidth,
+            height: window.innerHeight
+        },
+        this.cameraParam = {
+            fov: 75,
+            near: .1,
+            far: 100,
+            lookAt: new g(0,0,0),
+            x: 1,
+            y: 0,
+            z: 3
+        },
+        this.scene = null,
+        this.camera = null,
+        this.renderer = null,
+        this.light = null,
+        this.light2 = null,
+        this.controls = null,
+        this.webglElement = null,
+        this.isInitialized = !1
+    }
+    init() {
+        this._setScene(),
+        this._setRenderer(),
+        this._setCamera(),
+        this._setLight(),
+        this._setControls(),
+        this.isInitialized = !0
+    }
+    _setScene() {
+        this.scene = new o
+    }
+    _setRenderer() {
+        this.renderer = new a({
+            alpha: !0,
+            antialias: !0
+        }),
+        this.renderer.setSize(this.rendererParam.width, this.rendererParam.height),
+        this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio)),
+        this.webglElement = document.querySelector("#container"),
+        this.webglElement.appendChild(this.renderer.domElement)
+    }
+    _setCamera() {
+        const e = window.innerWidth
+          , i = window.innerHeight;
+        this.isInitialized || (this.camera = new l(75,e / i,.1,100),
+        this.camera.position.set(this.cameraParam.x, this.cameraParam.y, this.cameraParam.z)),
+        this.camera.aspect = e / i,
+        this.camera.updateProjectionMatrix(),
+        this.renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+    _setLight() {
+        const e = new O;
+        e.position.set(2.5, 2.5, 2.5),
+        e.castShadow = !0,
+        this.scene.add(e);
+        const i = new O;
+        i.position.set(-2.5, 2.5, 2.5),
+        i.castShadow = !0,
+        this.scene.add(i)
+    }
+    _setControls() {
+        this.controls = new k(this.camera,this.renderer.domElement)
+    }
+    render() {
+        this.renderer.render(this.scene, this.camera)
+    }
+    resize() {
+        this._setCamera()
+    }
+}
+class Je {
+    constructor(e) {
+        this.stage = e,
+        this.clock = null,
+        this.time = 0,
+        this.geometry = null,
+        this.material = null,
+        this.mesh = null,
+        this.groundGeometry = null,
+        this.groundMirror = null,
+        this.windowWidth = 0,
+        this.windowHeight = 0,
+        this.windowWidthHalf = 0,
+        this.windowHeightHalf = 0
+    }
+    init() {
+        this.clock = new h;
+        const e = new r().load("/image2.png");
+        this.geometry = new c(2,2),
+        this.material = new F({
+            map: e
+        }),
+        this.mesh = new u(this.geometry,this.material),
+        this.stage.scene.add(this.mesh),
+        this._setMeshPosition(),
+        this._setMirror(),
+        this._setWindowSize()
+    }
+    _setMirror() {
+        this.groundGeometry = new c(2,2),
+        this.groundMirror = new $(this.groundGeometry,{
+            clipBias: 0,
+            textureWidth: window.innerWidth * window.devicePixelRatio,
+            textureHeight: window.innerHeight * window.devicePixelRatio,
+            color: 8421504,
+            multisamnple: 4
+        }),
+        this.groundMirror.rotateX(-Math.PI / 2),
+        this.groundMirror.position.y = -1.2,
+        this.groundMirror.position.z = 1,
+        this.stage.scene.add(this.groundMirror),
+        new r().load("/image2.png"),
+        this.groundMirror.material.fragmentShader = `
+		uniform vec3 color;
+		uniform sampler2D tDiffuse;
+		varying vec4 vUv;
+
+		#include <logdepthbuf_pars_fragment>
+
+		float blendOverlay( float base, float blend ) {
+
+			return( base < 0.5 ? ( 2.0 * base * blend ) : ( 1.0 - 2.0 * ( 1.0 - base ) * ( 1.0 - blend ) ) );
+
+		}
+
+		vec3 blendOverlay( vec3 base, vec3 blend ) {
+
+			return vec3( blendOverlay( base.r, blend.r ), blendOverlay( base.g, blend.g ), blendOverlay( base.b, blend.b ) );
+
+		}
+
+		void main() {
+
+			#include <logdepthbuf_fragment>
+
+			vec4 base = texture2DProj( tDiffuse, vUv );
+            base *= .3;
+			gl_FragColor = base;
+
+		}`,
+        console.log(this.groundMirror.material)
+    }
+    _setWindowSize() {
+        this.windowWidth = window.innerWidth,
+        this.windowHeight = window.innerHeight,
+        this.windowWidthHalf = this.windowWidth * .5,
+        this.windowHeightHalf = this.windowHeight * .5
+    }
+    _setMeshScale() {
+        this.mesh.scale.set(this.windowWidth, this.windowHeight),
+        this.meshWidthHalf = this.mesh.scale.x * .5,
+        this.meshHeightHalf = this.mesh.scale.y * .5
+    }
+    _setMeshPosition() {
+        this.mesh.position.x = 0,
+        this.mesh.position.y = 0
+    }
+    resize() {
+        this._setWindowSize()
+    }
+    render() {
+        this.mesh;
+        const e = this.clock.getElapsedTime();
+        this.time = e
+    }
+}
+class Qe {
+    constructor() {
+        this.stage = null
+    }
+    init() {
+        this.stage = new Ke,
+        this.stage.init(),
+        this.mesh = new Je(this.stage),
+        this.mesh.init(),
+        this.onRaf(),
+        this.resize = this.resize.bind(this),
+        window.addEventListener("resize", this.resize)
+    }
+    render() {
+        this.stage.render(),
+        this.mesh.render()
+    }
+    resize() {
+        this.stage.resize(),
+        this.mesh.resize()
+    }
+    onRaf() {
+        this.render(),
+        requestAnimationFrame(this.onRaf.bind(this))
+    }
+}
+class Ze {
+    constructor() {
+        this.rendererParam = {
+            clearColor: 15724527,
+            width: window.innerWidth,
+            height: window.innerHeight
+        },
+        this.scene = null,
+        this.camera = null,
+        this.renderer = null,
+        this.light = null,
+        this.controls = null,
+        this.webglElement = null,
+        this.isInitialized = !1
+    }
+    init() {
+        this._setScene(),
+        this._setRenderer(),
+        this._setCamera(),
+        this._setLight(),
+        this._setControls(),
+        this.isInitialized = !0
+    }
+    _setScene() {
+        this.scene = new o
+    }
+    _setRenderer() {
+        this.renderer = new a({
+            alpha: !1,
+            antialias: !0
+        }),
+        this.renderer.physicallyCorrectLights = !0,
+        this.renderer.outputEncoding = E,
+        this.renderer.toneMapping = U,
+        this.renderer.shadowMap.enabled = !0,
+        this.renderer.shadowMap.type = _,
+        this.renderer.setSize(this.rendererParam.width, this.rendererParam.height),
+        this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio)),
+        this.webglElement = document.querySelector("#container"),
+        this.webglElement.appendChild(this.renderer.domElement)
+    }
+    _setCamera() {
+        this.isInitialized || (this.camera = new l(75,window.innerWidth / window.innerHeight,.1,100),
+        this.camera.position.set(Math.PI * 2, 0, 0)),
+        this.camera.aspect = window.innerWidth / window.innerHeight,
+        this.camera.updateProjectionMatrix(),
+        this.renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+    _setLight() {
+        this.light = new x("#ffffff",3),
+        this.light.castShadow = !0,
+        this.light.shadow.camera.far = 15,
+        this.light.shadow.mapSize.set(1024, 1024),
+        this.light.shadow.normalBias = .05,
+        this.light.position.set(4.25, 3, 2.25),
+        this.scene.add(this.light)
+    }
+    _setControls() {
+        this.controls = new k(this.camera,this.webglElement),
+        this.controls.target.set(0, 0, 0),
+        this.controls.enableDamping = !0
+    }
+    render() {
+        this.controls.update(),
+        this.renderer.render(this.scene, this.camera)
+    }
+    resize() {
+        this._setCamera()
+    }
+}
+var ei = `varying vec2 vUv;
+varying float dis;
+uniform float uTime;
+
+void main(){
+    vUv = uv;
+    vec4 modelPosition = modelMatrix * vec4(position,1.0);
+    dis = sin(modelPosition.y - uTime) * .02;
+    modelPosition.z += dis;
+
+    vec4 viewPosition = viewMatrix * modelPosition;
+    vec4 projectedPosition = projectionMatrix * viewPosition;
+
+    gl_Position = projectedPosition;
+}`
+  , ii = `varying vec2 vUv;
+uniform vec2 uMeshSize;
+uniform vec2 uTextureSize;
+uniform sampler2D uTexture;
+uniform float uTime;
+varying float dis;
+
+void main(){
+
+    vec2 uvTexture = vUv;
+    vec2 resolutionRatio = vec2(
+       min((uMeshSize.x / uMeshSize.y) / (uTextureSize.x / uTextureSize.y), 1.0),
+       min((uMeshSize.y / uMeshSize.x) / (uTextureSize.y / uTextureSize.x), 1.0)
+    );
+    uvTexture -= .5;
+    uvTexture *= resolutionRatio;
+    uvTexture += .5;
+
+    vec4 cDist = texture2D(uTexture,uvTexture);
+    cDist.r /= sin(dis * 10.0);
+    cDist.b /= sin(dis * 5.0);
+
+
+    gl_FragColor = vec4(cDist.r,cDist.g,cDist.b,cDist.a);
+
+}`;
+class ti {
+    constructor(e, i, t) {
+        this.stage = e,
+        this.name = i,
+        this.url = t,
+        this.mesh = null,
+        this.debugObject = {},
+        this.clock = null,
+        this.time = 0,
+        this.uniforms = {
+            uTexture: {
+                value: new r().load("/image1.png")
+            },
+            uTextureSize: {
+                value: {
+                    x: 1080,
+                    y: 1080
+                }
+            },
+            uMeshSize: {
+                value: {
+                    x: window.innerWidth,
+                    y: window.innerHeight
+                }
+            },
+            uTime: {
+                value: 0
+            }
+        },
+        this.helper = null
+    }
+    init() {
+        const e = new b;
+        e.setDecoderPath("/draco/");
+        const i = new C;
+        i.setDRACOLoader(e),
+        i.load(this.url, t=>{
+            this.mesh = t.scene,
+            this.stage.scene.add(t.scene),
+            this.updateAllMaterials(),
+            this._setPosition()
+        }
+        ),
+        this.clock = new h,
+        this.helper = new R(5)
+    }
+    updateAllMaterials() {
+        this.stage.scene.traverse(e=>{
+            e instanceof u && e.material instanceof W && (console.log(e),
+            e.name === "Plane" && (e.material = new w({
+                vertexShader: ei,
+                fragmentShader: ii,
+                uniforms: this.uniforms
+            })),
+            e.material.envMapIntensity = this.debugObject.envMapIntensity,
+            e.castShadow = !0,
+            e.receiveShadow = !0)
+        }
+        )
+    }
+    _setPosition() {
+        console.log(this.mesh.children[1].name),
+        this.name === "house" && (this.mesh.position.set(0, -3, 0),
+        this.mesh.scale.set(3, 3, 3),
+        this.mesh.rotation.set(0, .5, 0)),
+        this.name === "bird" && (this.mesh.position.set(.5, -1, 1),
+        this.mesh.rotation.set(-.3, .5, 0)),
+        this.mesh.children[1].rotation.set(Math.PI * 1.5, 0, 0)
+    }
+    render() {
+        this.mesh && (this.mesh.position.z = Math.sin(this.time * 1.5));
+        const e = this.clock.getElapsedTime();
+        this.time = e,
+        this.uniforms.uTime.value = this.time
+    }
+}
+class si {
+    constructor() {
+        this.stage = null,
+        this.models = null,
+        this.modelObjects = []
+    }
+    init() {
+        this.stage = new Ze,
+        this.stage.init(),
+        this.models = [{
+            name: "cube",
+            url: "/models/track.glb",
+            mesh: null
+        }],
+        this.models.forEach((e,i)=>{
+            this.models[i].mesh = new ti(this.stage,e.name,e.url),
+            this.models[i].mesh.init()
+        }
+        ),
+        this.onRaf(),
+        this.resize = this.resize.bind(this),
+        window.addEventListener("resize", this.resize)
+    }
+    render() {
+        this.stage.render(),
+        this.models.forEach((e,i)=>{
+            this.models[i].mesh.render()
+        }
+        )
+    }
+    resize() {
+        this.stage.resize()
+    }
+    onRaf() {
+        this.render(),
+        requestAnimationFrame(this.onRaf.bind(this))
+    }
+}
+class ni {
+    constructor() {
+        this.rendererParam = {
+            clearColor: 15724527,
+            width: window.innerWidth,
+            height: window.innerHeight
+        },
+        this.scene = null,
+        this.camera = null,
+        this.renderer = null,
+        this.light = null,
+        this.ambientLight = null,
+        this.controls = null,
+        this.webglElement = null,
+        this.isInitialized = !1,
+        this.scrollY = 0
+    }
+    init() {
+        this._setScene(),
+        this._setRenderer(),
+        this._setCamera(),
+        this._setLight(),
+        this.isInitialized = !0
+    }
+    _setScene() {
+        this.scene = new o
+    }
+    _setRenderer() {
+        this.renderer = new a({
+            alpha: !0,
+            antialias: !0
+        }),
+        this.renderer.setClearColor(7253745, 1),
+        this.renderer.physicallyCorrectLights = !0,
+        this.renderer.outputEncoding = E,
+        this.renderer.toneMapping = I,
+        this.renderer.shadowMap.enabled = !0,
+        this.renderer.shadowMap.type = _,
+        this.renderer.setSize(this.rendererParam.width, this.rendererParam.height),
+        this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio)),
+        this.webglElement = document.querySelector("#container"),
+        this.webglElement.appendChild(this.renderer.domElement)
+    }
+    _setCamera() {
+        this.isInitialized || (this.camera = new l(75,window.innerWidth / window.innerHeight,.1,100),
+        this.camera.position.set(0, 0, 8)),
+        this.camera.aspect = window.innerWidth / window.innerHeight,
+        this.camera.updateProjectionMatrix(),
+        this.renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+    _setLight() {
+        this.light = new x("#FFEAE7",2),
+        this.light.castShadow = !0,
+        this.light.shadow.camera.far = 1,
+        this.light.shadow.normalBias = 1,
+        this.light.position.set(-6, 5, 2),
+        this.ambientLight = new j(10456288,1),
+        this.scene.add(this.ambientLight)
+    }
+    _setControls() {
+        this.controls = new OrbitControls(this.camera,this.webglElement),
+        this.controls.target.set(0, 0, 0),
+        this.controls.enableDamping = !0
+    }
+    render() {
+        this.renderer.render(this.scene, this.camera)
+    }
+    resize() {
+        this._setCamera()
+    }
+    scroll(e) {
+        this.scrollY += e.deltaY,
+        this.scrollY < 0 && (this.scrollY = 0),
+        this.scrollY > 4500 && (this.scrollY = 4500),
+        this.camera.position.x = this.scrollY * .005
+    }
+}
+class ri {
+    constructor(e, i, t) {
+        this.stage = e,
+        this.name = i,
+        this.url = t,
+        this.mesh = null,
+        this.debugObject = {},
+        this.clock = null,
+        this.time = 0,
+        this.uniforms = {
+            uTexture: {
+                value: new r().load("/image1.png")
+            },
+            uTextureSize: {
+                value: {
+                    x: 1080,
+                    y: 1080
+                }
+            },
+            uMeshSize: {
+                value: {
+                    x: window.innerWidth,
+                    y: window.innerHeight
+                }
+            },
+            uTime: {
+                value: 0
+            }
+        },
+        this.bee = null
+    }
+    init() {
+        const e = new b;
+        e.setDecoderPath("/draco/");
+        const i = new C;
+        i.setDRACOLoader(e),
+        i.load(this.url, t=>{
+            console.log(t),
+            this.mesh = t.scene,
+            this.stage.scene.add(t.scene),
+            this.updateAllMaterials(),
+            this._setPosition()
+        }
+        ),
+        this.clock = new h
+    }
+    updateAllMaterials() {
+        this.stage.scene.traverse(e=>{
+            e instanceof u && e.material instanceof W && (e.material.envMapIntensity = this.debugObject.envMapIntensity,
+            e.castShadow = !0,
+            e.receiveShadow = !0),
+            e.type === "DirectionalLight" && (e.castShadow = !0,
+            e.shadow.camera.right = 20,
+            e.shadow.camera.left = -20,
+            e.shadow.camera.top = -20,
+            e.shadow.camera.bottom = 20,
+            e.shadow.mapSize.set(4096, 4096)),
+            e.name === "bee" && (this.bee = e)
+        }
+        )
+    }
+    _setPosition() {
+        this.mesh.position.set(-2, -3, 0),
+        this.name === "cube2" && this.mesh.position.set(15, -3, 0)
+    }
+    render() {
+        this.mesh,
+        this.bee && this.bee.children.map(i=>{
+            i.position.set(Math.sin(-this.time), Math.cos(this.time), 0)
+        }
+        );
+        const e = this.clock.getElapsedTime();
+        this.time = e,
+        this.uniforms.uTime.value = this.time
+    }
+}
+class hi {
+    constructor() {
+        this.stage = null,
+        this.models = null,
+        this.modelObjects = []
+    }
+    init() {
+        this.stage = new ni,
+        this.stage.init(),
+        this.models = [{
+            name: "cube",
+            url: "/models/flower1_test.glb",
+            mesh: null
+        }, {
+            name: "cube2",
+            url: "/models/bee.glb",
+            mesh: null
+        }],
+        this.models.forEach((e,i)=>{
+            this.models[i].mesh = new ri(this.stage,e.name,e.url),
+            this.models[i].mesh.init()
+        }
+        ),
+        this.onRaf(),
+        this.resize = this.resize.bind(this),
+        window.addEventListener("resize", this.resize),
+        this.scroll = this.scroll.bind(this),
+        window.addEventListener("wheel", this.scroll)
+    }
+    render() {
+        this.stage.render(),
+        this.models.forEach((e,i)=>{
+            this.models[i].mesh.render()
+        }
+        )
+    }
+    resize() {
+        this.stage.resize()
+    }
+    scroll(e) {
+        this.stage.scroll(e)
+    }
+    onRaf() {
+        this.render(),
+        requestAnimationFrame(this.onRaf.bind(this))
+    }
+}
+class oi {
+    constructor() {
+        this.rendererParam = {
+            clearColor: 15724527,
+            width: window.innerWidth,
+            height: window.innerHeight
+        },
+        this.helper = null,
+        this.scene = null,
+        this.camera = null,
+        this.renderer = null,
+        this.light = null,
+        this.ambientLight = null,
+        this.controls = null,
+        this.time = 0,
+        this.clock = null,
+        this.isInitialized = !1
+    }
+    init() {
+        this.clock = new h,
+        this._setScene(),
+        this._setRenderer(),
+        this._setCamera(),
+        this._setLight(),
+        this.isInitialized = !0
+    }
+    _setScene() {
+        this.scene = new o,
+        this.helper = new R(1e3),
+        this.scene.add(this.helper)
+    }
+    _setRenderer() {
+        this.renderer = new a({
+            alpha: !0,
+            antialias: !0
+        }),
+        this.renderer.physicallyCorrectLights = !0,
+        this.renderer.outputEncoding = E,
+        this.renderer.toneMapping = I,
+        this.renderer.shadowMap.enabled = !0,
+        this.renderer.shadowMap.type = _,
+        this.renderer.setSize(this.rendererParam.width, this.rendererParam.height),
+        this.renderer.setPixelRatio(Math.min(2, window.devicePixelRatio)),
+        this.webglElement = document.querySelector("#container"),
+        this.webglElement.appendChild(this.renderer.domElement)
+    }
+    _setCamera() {
+        this.isInitialized || (this.camera = new l(75,window.innerWidth / window.innerHeight,.1,100),
+        this.camera.position.set(0, 1, 1)),
+        this.camera.aspect = window.innerWidth / window.innerHeight,
+        this.camera.lookAt(new g(0,1,0)),
+        this.camera.updateProjectionMatrix(),
+        this.renderer.setSize(window.innerWidth, window.innerHeight)
+    }
+    _setLight() {
+        this.light = new x("#FFEAE7",4),
+        this.light.castShadow = !0,
+        this.light2 = new x("#FFEAE7",4),
+        this.light2.castShadow = !0,
+        this.light3 = new x("#FFEAE7",4),
+        this.light3.castShadow = !0,
+        this.light.position.set(0, 1, 1),
+        this.light2.position.set(1, 1, 0),
+        this.light3.position.set(-1, 1, 0),
+        this.ambientLight = new j(16777215,1),
+        this.ambientLight.position.set(1, 1, 1)
+    }
+    _setControls() {
+        this.controls = new OrbitControls(this.camera,this.webglElement),
+        this.controls.target.set(0, 0, 0),
+        this.controls.enableDamping = !0
+    }
+    render() {
+        const e = this.clock.getElapsedTime();
+        this.time = e,
+        this.renderer.render(this.scene, this.camera)
+    }
+    resize() {
+        this._setCamera()
+    }
+}
+class ai {
+    constructor(e, i, t) {
+        this.stage = e,
+        this.name = i,
+        this.url = t,
+        this.mesh = null,
+        this.debugObject = {},
+        this.clock = null,
+        this.time = 0,
+        this.uniforms = {
+            uTexture: {
+                value: new r().load("/image1.png")
+            },
+            uTextureSize: {
+                value: {
+                    x: 1080,
+                    y: 1080
+                }
+            },
+            uMeshSize: {
+                value: {
+                    x: window.innerWidth,
+                    y: window.innerHeight
+                }
+            },
+            uTime: {
+                value: 0
+            }
+        }
+    }
+    init() {
+        const e = new b;
+        e.setDecoderPath("/draco/");
+        const i = new C;
+        i.setDRACOLoader(e),
+        i.load(this.url, t=>{
+            this.mesh = t.scene,
+            this.mesh.name = this.name,
+            this.stage.scene.add(t.scene),
+            this.updateAllMaterials(),
+            this._setPosition()
+        }
+        ),
+        this.clock = new h
+    }
+    updateAllMaterials() {
+        this.stage.scene.traverse(e=>{
+            console.log(e),
+            e instanceof u && e.material instanceof W && (e.material.envMapIntensity = this.debugObject.envMapIntensity,
+            e.castShadow = !0,
+            e.receiveShadow = !0,
+            e.geometry.computeVertexNormals()),
+            e.type === "PointLight"
+        }
+        )
+    }
+    _setPosition() {
+        this.mesh.position.set(0, -1, 0)
+    }
+    render() {
+        const e = this.clock.getElapsedTime();
+        this.time = e,
+        this.mesh && this.mesh.name === "screen",
+        this.uniforms.uTime.value = this.time
+    }
+}
+class li {
+    constructor() {
+        this.stage = null,
+        this.models = null,
+        this.modelObjects = []
+    }
+    init() {
+        this.stage = new oi,
+        this.stage.init(),
+        this.models = [{
+            name: "screen",
+            url: "/models/studio2.glb",
+            mesh: null
+        }],
+        this.models.forEach((e,i)=>{
+            this.models[i].mesh = new ai(this.stage,e.name,e.url),
+            this.models[i].mesh.init()
+        }
+        ),
+        this.onRaf(),
+        this.resize = this.resize.bind(this),
+        window.addEventListener("resize", this.resize)
+    }
+    render() {
+        this.stage.render(),
+        this.models.forEach((e,i)=>{
+            this.models[i].mesh.render()
+        }
+        )
+    }
+    resize() {
+        this.stage.resize()
+    }
+    onRaf() {
+        this.render(),
+        requestAnimationFrame(this.onRaf.bind(this))
+    }
+}
+const ui = document.body.dataset.page
+  , mi = new G
+  , di = new Z
+  , ci = new ne
+  , wi = new le
+  , gi = new we
+  , A = new pe
+  , vi = new Te
+  , fi = new be
+  , xi = new Re
+  , pi = new Ie
+  , Si = new Ne
+  , zi = new Xe
+  , Mi = new Qe
+  , yi = new si
+  , Ti = new hi
+  , Pi = new li;
+window.addEventListener("DOMContentLoaded", ()=>{
+    switch (ui) {
+    case "index":
+        mi.init();
+        break;
+    case "shader1":
+        di.init();
+        break;
+    case "shader2":
+        ci.init();
+        break;
+    case "shader3":
+        wi.init();
+        break;
+    case "shader4":
+        gi.init();
+        break;
+    case "shader5":
+        A.init();
+        break;
+    case "shader5":
+        A.init();
+        break;
+    case "shader6":
+        vi.init();
+        break;
+    case "shader7":
+        fi.init();
+        break;
+    case "shader8":
+        xi.init();
+        break;
+    case "shader9":
+        pi.init();
+        break;
+    case "shader10":
+        Si.init();
+        break;
+    case "shader11":
+        zi.init();
+        break;
+    case "shader12":
+        Mi.init();
+        break;
+    case "shader13":
+        yi.init();
+        break;
+    case "shader14":
+        Ti.init();
+        break;
+    case "shader15":
+        Pi.init();
+        break
+    }
+}
+);

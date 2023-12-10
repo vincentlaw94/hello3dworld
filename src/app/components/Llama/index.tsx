@@ -2,6 +2,8 @@ import React from "react";
 import { useLoader } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
+import { frag, frag2, v } from "./frag";
+
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 export default function Llama() {
@@ -26,6 +28,8 @@ const GLBModel = () => {
       receiveShadow
       geometry={gltf.nodes.Sphere?.geometry}
       material={gltf.materials.black}
-    />
+    >
+      <meshStandardMaterial color={"hotpink"} />
+    </mesh>
   );
 };
