@@ -6,14 +6,47 @@ import GUI from "lil-gui";
 const canvas = document.querySelector("canvas.webgl") as HTMLCanvasElement;
 const scene = new THREE.Scene();
 
-//object
-const geometry = new THREE.SphereGeometry(1, 32, 32);
-const material = new THREE.MeshBasicMaterial({
-  color: 0xff0000,
-  wireframe: true,
+// particles
+const particlesGeometry = new THREE.BufferGeometry();
+const count = 20000;
+const positions = new Float32Array(count * 3);
+const colors = new Float32Array(count * 3);
+
+for (let i = 0; i < count * 3; i++) {
+  positions[i] = (Math.random() - 0.5) * 10;
+  colors[i] = Math.random();
+}
+
+particlesGeometry.setAttribute(
+  "position",
+  new THREE.BufferAttribute(positions, 3)
+);
+particlesGeometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
+// Create the Three.js BufferAttribute and specify that each information is composed of 3 values
+const particlesMaterial = new THREE.PointsMaterial({
+  size: 0.1,
+  sizeAttenuation: true,
 });
-const mesh = new THREE.Mesh(geometry, material);
-scene.add(mesh);
+particlesMaterial.size = 0.1;
+/**
+ * Textures
+ */
+const textureLoader = new THREE.TextureLoader();
+const particleTexture = textureLoader.load("textures/particles/2.png");
+
+particlesMaterial.vertexColors = true;
+
+// particlesMaterial.map = particleTexture
+particlesMaterial.transparent = true;
+particlesMaterial.alphaMap = particleTexture;
+// particlesMaterial.alphaTest = 0.001;
+// particlesMaterial.depthTest = false;
+particlesMaterial.depthWrite = false;
+particlesMaterial.blending = THREE.AdditiveBlending;
+
+const particles = new THREE.Points(particlesGeometry, particlesMaterial);
+scene.add(particles);
 
 //camera
 const sizes = {
@@ -43,10 +76,15 @@ const animate = () => {
   const elapsedTime = clock.getElapsedTime();
   //update objects
 
-  //   camera.position.x = Math.cos(elapsedTime);
-  //   camera.position.y = Math.sin(elapsedTime);
-  //   camera.lookAt(mesh.position);
+  for (let i = 0; i < count; i++) {
+    let i3 = i * 3;
 
+    const x = particlesGeometry.attributes.position.array[i3];
+    particlesGeometry.attributes.position.array[i3 + 1] = Math.sin(
+      elapsedTime + x
+    );
+  }
+  particlesGeometry.attributes.position.needsUpdate = true;
   //render
   renderer.render(scene, camera);
   window.requestAnimationFrame(animate);
@@ -57,8 +95,8 @@ animate();
 /**
  * Debug
  */
-const gui = new GUI();
-gui.add(mesh.position, "y").min(-3).max(3).step(0.01).name("elevation");
-gui.add(mesh, "visible");
-gui.add(material, "wireframe");
-gui.addColor(material, "color");
+// const gui = new GUI();
+// gui.add(mesh.position, "y").min(-3).max(3).step(0.01).name("elevation");
+// gui.add(mesh, "visible");
+// gui.add(material, "wireframe");
+// gui.addColor(material, "color");
